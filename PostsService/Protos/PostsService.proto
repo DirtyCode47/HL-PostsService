@@ -39,7 +39,6 @@ message DeleteResponse {
 
 
 
-
 message UpdateRequest {
 	Post post = 1; 
 }
@@ -56,10 +55,9 @@ message GetPageRequest {
 
 message GetPageResponse {
 	repeated Post posts = 1;
-	uint32 page_number = 1;
+	uint32 page_number = 2;
 	uint32 max_page_number = 3;
 }
-
 
 
 
@@ -70,7 +68,6 @@ message GetRequest {
 message GetResponse {
 	Post post = 1; 
 }
-
 
 
 

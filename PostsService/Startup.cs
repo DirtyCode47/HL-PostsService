@@ -4,6 +4,7 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.EntityFrameworkCore;
+using PostsService.Repositories;
 
 namespace PostsService
 {
@@ -23,8 +24,8 @@ namespace PostsService
 
 
 
-            //services.AddDbContext<HControlServiceDbContext>(options =>
-            //    options.UseNpgsql(Configuration.GetConnectionString("DefaultConnection")));
+            services.AddDbContext<PostsServiceDbContext>(options =>
+                options.UseNpgsql(Configuration.GetConnectionString("DefaultConnection")));
 
             //services.AddScoped<Repository<HydrologyControl>>();
             //services.AddScoped<HydrologyControlServiceImpl>();

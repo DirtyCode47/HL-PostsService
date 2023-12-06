@@ -1,0 +1,110 @@
+syntax = "proto3";
+option csharp_namespace = "PostsService.Protos";
+
+service PostsService {
+	rpc Create(CreateRequest) returns (CreateResponse);
+	rpc Delete(DeleteRequest) returns (DeleteResponse);
+	rpc Update(UpdateRequest) returns (UpdateResponse);
+	rpc GetPage(GetPageRequest) returns (GetPageResponse);
+	rpc Get(GetRequest) returns (GetResponse);
+	rpc Find(FindRequest) returns (FindResponse);
+}
+
+message Entity {
+	string id  = 1;
+	string code = 2;
+	string name = 3;
+	string river = 4;
+}
+
+//Create – создать запись, принимает полную сущность (с атрибутами id,code,name,river. В прото файле у них у всех будет тип string), 
+//возвращает её же в том случае, если запись была успешно добавлена
+message CreateRequest {
+	CreateEntity create_entity = 1;
+}
+
+message CreateResponse {
+	CreateEntity create_entity = 1;
+}
+
+message CreateEntity 
+{
+	string id  = 1;
+	string code = 2;
+	string name = 3;
+	string river = 4;
+}
+
+
+
+//Delete – Удалить запись по id. Принимает id записи, возвращает удаленную запись в случае успешного удаления.
+message DeleteRequest {
+	string id = 1;
+}
+
+message DeleteResponse {
+	Entity entity = 1;
+}
+
+
+
+//Update – Обновление сущности. На входе метода – полная запись. В случае, если обновление было успешным, возвращаем её же
+message UpdateRequest {
+	Entity entity = 1; 
+}
+
+message UpdateResponse {
+	Entity entity = 1; 
+}
+
+
+
+//GetPage – Получить страницу записей (типо коллекция записей). 
+//Предположим, что на одной странице 20 записей. Если что, поменяем. 
+//На входе – номер страницы. 
+//На выходе возвращаем: 
+//1) страницу записей (массив) 
+//2) Актуальную страницу, которую получали на входе. 
+//3) Номер последней возможной страницы.
+message GetPageRequest {
+	string id = 1;
+}
+
+message GetPageResponse {
+	repeated Entity entities = 1;
+}
+
+
+
+//Get – Получить запись по коду поста. На входе код поста. На выходе получаем полную запись
+message GetRequest {
+    string code = 1;
+}
+
+message GetResponse {
+	Entity entity = 1; 
+}
+
+
+
+//Find – Найти запись по подстроке, в которую могут входить код, имя или река. Соответственно на входе подстрока, на выходе коллекция записей.
+message FindRequest {
+	string substring = 1;
+}
+
+message FindResponse {
+	repeated Entity entities = 1; 
+}
+
+
+
+
+
+
+
+
+
+
+
+
+

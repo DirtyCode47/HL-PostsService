@@ -1,0 +1,93 @@
+syntax = "proto3";
+option csharp_namespace = "PostsService.Protos";
+
+service PostsService {
+	rpc Create(CreateRequest) returns (CreateResponse);
+	rpc Delete(DeleteRequest) returns (DeleteResponse);
+	rpc Update(UpdateRequest) returns (UpdateResponse);
+	rpc GetPage(GetPageRequest) returns (GetPageResponse);
+	rpc Get(GetRequest) returns (GetResponse);
+	rpc Find(FindRequest) returns (FindResponse);
+}
+
+message Post {
+	string id  = 1;
+	string code = 2;
+	string name = 3;
+	string river = 4;
+}
+
+
+message CreateRequest {
+	Post post = 1;
+}
+
+message CreateResponse {
+	Post post = 1;
+}
+
+
+
+
+message DeleteRequest {
+	string id = 1;
+}
+
+message DeleteResponse {
+	Post post = 1;
+}
+
+
+
+message UpdateRequest {
+	Post post = 1; 
+}
+
+message UpdateResponse {
+	Post post = 1; 
+}
+
+
+
+message GetPageRequest {
+	uint32 page_number = 1;
+}
+
+message GetPageResponse {
+	repeated Post posts = 1;
+	uint32 page_number = 2;
+	uint32 max_page_number = 3;
+}
+
+
+
+message GetRequest {
+    string code = 1;
+}
+
+message GetResponse {
+	Post post = 1; 
+}
+
+
+
+message FindRequest {
+	string substring = 1;
+}
+
+message FindResponse {
+	repeated Post posts = 1; 
+}
+
+
+
+
+
+
+
+
+
+
+
+
+

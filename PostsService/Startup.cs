@@ -5,6 +5,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.EntityFrameworkCore;
 using PostsService.Repositories;
+using PostsService.Services;
 
 namespace PostsService
 {
@@ -19,16 +20,11 @@ namespace PostsService
 
         public void ConfigureServices(IServiceCollection services)
         {
-            //var connectionString = Configuration.GetConnectionString("DefaultConnection");
-            //Console.WriteLine($"ConnectionString: {connectionString}");
-
-
-
             services.AddDbContext<PostsServiceDbContext>(options =>
                 options.UseNpgsql(Configuration.GetConnectionString("DefaultConnection")));
 
-            //services.AddScoped<Repository<HydrologyControl>>();
-            //services.AddScoped<HydrologyControlServiceImpl>();
+            services.AddScoped<PostsRepository>();
+            services.AddScoped<PostsServiceImpl>();
 
             services.AddGrpc();
         }
@@ -50,16 +46,7 @@ namespace PostsService
 
             app.UseEndpoints(endpoints =>
             {
-                //endpoints.MapGrpcService<HydrologyControlService>();
-
-
-                //endpoints.MapGrpcService<HydrologyControlServiceImpl>();
-
-
-                //endpoints.MapGet("/", async context =>
-                //{
-                //    await context.Response.WriteAsync("Hello, this is an empty page!");
-                //});
+                endpoints.MapGrpcService<PostsServiceImpl>();
             });
         }
     }

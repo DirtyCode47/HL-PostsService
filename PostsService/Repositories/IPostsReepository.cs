@@ -8,7 +8,7 @@ namespace PostsService.Repositories
         public Posts Delete(Posts post);
         public Posts Update(Posts post);
         public IEnumerable<Posts> Find(string substring);
-        public IEnumerable<Posts> GetPage(Guid id);
+        public IEnumerable<Posts> GetPage(int page, int page_size);
         public int GetMaxPage(int page_size);
     }
 }

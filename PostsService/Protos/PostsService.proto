@@ -62,7 +62,7 @@ message GetPageResponse {
 
 
 message GetRequest {
-    string code = 1;
+    string id = 1;
 }
 
 message GetResponse {

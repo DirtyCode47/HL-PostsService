@@ -4,7 +4,7 @@ namespace PostsService.Repositories
     public interface IPostsReepository
     {
         public Posts Add(Posts post);
-        public Posts Get(int PostCode);
+        public Posts Get(Guid id);
         public Posts Delete(Posts post);
         public Posts Update(Posts post);
         public IEnumerable<Posts> Find(string substring);

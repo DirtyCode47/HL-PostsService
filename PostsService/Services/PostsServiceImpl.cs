@@ -7,6 +7,7 @@ using PostsService.Repositories;
 using System.Data.Common;
 using PostsService.Entities;
 using PostsService.Protos;
+using System.ComponentModel.DataAnnotations;
 
 namespace PostsService.Services
 {
@@ -19,7 +20,38 @@ namespace PostsService.Services
         }
         public override Task<CreateResponse> Create(CreateRequest request,ServerCallContext context)
         {
-            return Task.FromResult(new CreateResponse { });
+            Posts post = new Posts() { Id = Guid.Parse(request.Post.Id), Code = request.Post.Code, Name = request.Post.Name, River = request.Post.River };
+            try
+            {
+                Posts added_post = postsRepository.Add(post);
+                postsRepository.Complete();
+                return Task.FromResult(new CreateResponse { Post = request.Post });
+            }
+            catch (ExistRecordInDbException ex)
+            {
+                Console.WriteLine(ex.Message);
+                throw new RpcException(new Status(StatusCode.AlreadyExists, ex.Message));
+            }
+            catch (ValidationException ex)
+            {
+                Console.WriteLine(ex.Message);
+                throw new RpcException(new Status(StatusCode.InvalidArgument, ex.Message));
+            }
+            catch (PostgresException ex)
+            {
+                Console.WriteLine(ex.Message);
+                throw new RpcException(new Status(StatusCode.Unavailable, ex.Message));
+            }
+            catch (DbException ex)
+            {
+                Console.WriteLine(ex.Message);
+                throw new RpcException(new Status(StatusCode.Unavailable, ex.Message));
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine(ex.Message);
+                throw new RpcException(new Status(StatusCode.Unknown, ex.Message));
+            }
         }
         public override Task<DeleteResponse> Delete(DeleteRequest request, ServerCallContext context)
         {

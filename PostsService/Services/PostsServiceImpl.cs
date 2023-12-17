@@ -21,6 +21,7 @@ namespace PostsService.Services
         public override Task<CreateResponse> Create(CreateRequest request,ServerCallContext context)
         {
             Posts post = new Posts() { Id = Guid.Parse(request.Post.Id), Code = request.Post.Code, Name = request.Post.Name, River = request.Post.River };
+            
             try
             {
                 Posts added_post = postsRepository.Add(post);
@@ -55,7 +56,28 @@ namespace PostsService.Services
         }
         public override Task<DeleteResponse> Delete(DeleteRequest request, ServerCallContext context)
         {
-            return Task.FromResult(new DeleteResponse { });
+            Posts post = new Posts() { Id = Guid.Parse(request.Post.Id), Code = request.Post.Code, Name = request.Post.Name, River = request.Post.River };
+            
+            (Exception?, Posts?) query_tuple = postsRepository.Delete(post); 
+            
+            if(query_tuple.Item1!=null)
+            {
+                switch (query_tuple.Item1)
+                {
+                    case IncorrectLengthException incorrectLengthException:
+                        throw new RpcException(new Status(StatusCode.InvalidArgument, incorrectLengthException.Message));
+                        break;
+                    case NoSuchRecordInDbException incorrectRecordInDbException:
+                        throw new RpcException(new Status(StatusCode.InvalidArgument, incorrectRecordInDbException.Message));
+                        break;
+                    default:
+                        throw new RpcException(new Status(StatusCode.Unknown, "Unknown error"));
+                }
+            }
+
+            postsRepository.Complete();
+
+            return Task.FromResult(new DeleteResponse { Post = request.Post });
         }
         public override Task<UpdateResponse> Update(UpdateRequest request, ServerCallContext context)
         {
@@ -64,6 +86,7 @@ namespace PostsService.Services
         public override Task<GetResponse> Get(GetRequest request, ServerCallContext context)
         {
             Guid guid = Guid.Parse(request.Id);
+
             try
             {
                 Posts post = postsRepository.Get(guid);

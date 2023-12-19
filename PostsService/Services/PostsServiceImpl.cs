@@ -8,6 +8,9 @@ using System.Data.Common;
 using PostsService.Entities;
 using PostsService.Protos;
 using System.ComponentModel.DataAnnotations;
+using Microsoft.Extensions.Hosting;
+using Microsoft.EntityFrameworkCore;
+using static Grpc.Core.Metadata;
 
 namespace PostsService.Services
 {
@@ -21,63 +24,34 @@ namespace PostsService.Services
         public override Task<CreateResponse> Create(CreateRequest request,ServerCallContext context)
         {
             Posts post = new Posts() { Id = Guid.Parse(request.Post.Id), Code = request.Post.Code, Name = request.Post.Name, River = request.Post.River };
-            
-            try
-            {
-                Posts added_post = postsRepository.Add(post);
-                postsRepository.Complete();
-                return Task.FromResult(new CreateResponse { Post = request.Post });
-            }
-            catch (ExistRecordInDbException ex)
-            {
-                Console.WriteLine(ex.Message);
-                throw new RpcException(new Status(StatusCode.AlreadyExists, ex.Message));
-            }
-            catch (ValidationException ex)
-            {
-                Console.WriteLine(ex.Message);
-                throw new RpcException(new Status(StatusCode.InvalidArgument, ex.Message));
-            }
-            catch (PostgresException ex)
-            {
-                Console.WriteLine(ex.Message);
-                throw new RpcException(new Status(StatusCode.Unavailable, ex.Message));
-            }
-            catch (DbException ex)
-            {
-                Console.WriteLine(ex.Message);
-                throw new RpcException(new Status(StatusCode.Unavailable, ex.Message));
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine(ex.Message);
-                throw new RpcException(new Status(StatusCode.Unknown, ex.Message));
-            }
+
+            if (postsRepository.Get(Guid.Parse(request.Post.Id)) != null) 
+                throw new RpcException(new Status(StatusCode.AlreadyExists, "This record already exist in Db"));
+
+            Posts added_post = postsRepository.Add(post);
+            postsRepository.Complete();
+
+            return Task.FromResult(new CreateResponse { Post = request.Post });
         }
         public override Task<DeleteResponse> Delete(DeleteRequest request, ServerCallContext context)
         {
-            Posts post = new Posts() { Id = Guid.Parse(request.Post.Id), Code = request.Post.Code, Name = request.Post.Name, River = request.Post.River };
-            
-            (Exception?, Posts?) query_tuple = postsRepository.Delete(post); 
-            
-            if(query_tuple.Item1!=null)
-            {
-                switch (query_tuple.Item1)
-                {
-                    case IncorrectLengthException incorrectLengthException:
-                        throw new RpcException(new Status(StatusCode.InvalidArgument, incorrectLengthException.Message));
-                        break;
-                    case NoSuchRecordInDbException incorrectRecordInDbException:
-                        throw new RpcException(new Status(StatusCode.InvalidArgument, incorrectRecordInDbException.Message));
-                        break;
-                    default:
-                        throw new RpcException(new Status(StatusCode.Unknown, "Unknown error"));
-                }
-            }
+            Posts entity = new Posts() { Id = Guid.Parse(request.Post.Id), Code = request.Post.Code, Name = request.Post.Name, River = request.Post.River };
+            var entry = postsRepository.Delete(entity);
+
+            if (entry == null) throw new RpcException(new Status(StatusCode.InvalidArgument, "Can't find record in Db with this id"));
 
             postsRepository.Complete();
 
-            return Task.FromResult(new DeleteResponse { Post = request.Post });
+            return Task.FromResult(new DeleteResponse
+            {
+                Post = new Post
+                {
+                    Id = entity.Id.ToString(),
+                    Code = entity.Code,
+                    Name = entity.Name,
+                    River = entity.River,
+                }
+            });
         }
         public override Task<UpdateResponse> Update(UpdateRequest request, ServerCallContext context)
         {
@@ -86,43 +60,20 @@ namespace PostsService.Services
         public override Task<GetResponse> Get(GetRequest request, ServerCallContext context)
         {
             Guid guid = Guid.Parse(request.Id);
+            var post = postsRepository.Get(guid);
 
-            try
+            if (post == null) throw new RpcException(new Status(StatusCode.InvalidArgument, "Can't find record in Db with this id"));
+
+            return Task.FromResult(new GetResponse
             {
-                Posts post = postsRepository.Get(guid);
-
-                return Task.FromResult(new GetResponse
+                Post = new Post()
                 {
-                    Post = new Post()
-                    {
-                        Id = post.Id.ToString(),
-                        Code = post.Code,
-                        Name = post.Name,
-                        River = post.River
-                    }
-                });
-            }
-            catch (NoSuchRecordInDbException ex)
-            {
-                Console.WriteLine(ex.Message);
-                throw;
-            }
-            catch (PostgresException ex)
-            {
-                Console.WriteLine(ex.Message);
-                throw;
-            }
-            catch(DbException ex)
-            {
-                Console.WriteLine(ex.Message);
-                throw;
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine(ex.Message);
-                throw;
-            }
-            //return Task.FromResult(new GetResponse { });
+                    Id = post.Id.ToString(),
+                    Code = post.Code,
+                    Name = post.Name,
+                    River = post.River
+                }
+            });
         }
         public override Task<GetPageResponse> GetPage(GetPageRequest request, ServerCallContext context)
         {

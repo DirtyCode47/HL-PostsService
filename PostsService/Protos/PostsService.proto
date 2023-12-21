@@ -30,7 +30,7 @@ message CreateResponse {
 
 
 message DeleteRequest {
-	Post post = 1;
+	string id = 1;
 }
 
 message DeleteResponse {

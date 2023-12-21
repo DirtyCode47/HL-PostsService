@@ -19,15 +19,27 @@ namespace PostsService.Repositories
             return _dbContext.Posts.Add(post).Entity;
         }
 
+        public async Task<Posts> AddAsync(Posts post)
+        {
+            var added_post_entry = await _dbContext.Posts.AddAsync(post);
+            return added_post_entry.Entity;
+        }
+
         public Posts Get(Guid id)
         {
             return _dbContext.Posts.Find(id);
+        }
+
+        public async Task<Posts> GetAsync(Guid id)
+        {
+            return await _dbContext.Posts.FindAsync(id);
         }
 
         public Posts Delete(Posts post)
         {
             return _dbContext.Posts.Remove(post).Entity;
         }
+
 
         //НОВОЕ
         public Posts Update(Posts post)
@@ -63,11 +75,19 @@ namespace PostsService.Repositories
             throw new NotImplementedException();
         }
 
-
+        public async Task<bool> ExistsAsync(Guid postId)
+        {
+            return await _dbContext.Posts.AnyAsync(post => post.Id == postId);
+        }
 
         public void Complete()
         {
             _dbContext.SaveChanges();
+        }
+
+        public async Task<int> CompleteAsync()
+        {
+            return await _dbContext.SaveChangesAsync();
         }
 
    

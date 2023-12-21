@@ -22,28 +22,31 @@ namespace PostsService.Services
         {
             this.postsRepository = postsRepository;
         }
-        public override Task<CreateResponse> Create(CreateRequest request,ServerCallContext context)
+        public override async Task<CreateResponse> Create(CreateRequest request,ServerCallContext context)
         {
-            Posts post = new Posts() { Id = Guid.Parse(request.Post.Id), Code = request.Post.Code, Name = request.Post.Name, River = request.Post.River };
+            Guid post_id = Guid.Parse(request.Post.Id);
+            Posts post = new Posts() { Id = post_id, Code = request.Post.Code, Name = request.Post.Name, River = request.Post.River };
 
-            if (postsRepository.Get(Guid.Parse(request.Post.Id)) != null) 
+            if (await postsRepository.GetAsync(post_id) != null) 
                 throw new RpcException(new Status(StatusCode.AlreadyExists, "This record already exist in Db"));
 
-            Posts added_post = postsRepository.Add(post);
-            postsRepository.Complete();
+            Posts added_post = await postsRepository.AddAsync(post);
+            await postsRepository.CompleteAsync();
 
-            return Task.FromResult(new CreateResponse { Post = request.Post });
+            return new CreateResponse { Post = request.Post };
         }
-        public override Task<DeleteResponse> Delete(DeleteRequest request, ServerCallContext context)
+        public override async Task<DeleteResponse> Delete(DeleteRequest request, ServerCallContext context)
         {
-            Posts entity = new Posts() { Id = Guid.Parse(request.Post.Id), Code = request.Post.Code, Name = request.Post.Name, River = request.Post.River };
-            var entry = postsRepository.Delete(entity);
+            Guid post_id = Guid.Parse(request.Id);
+            Posts entity = await postsRepository.GetAsync(post_id);
 
-            if (entry == null) throw new RpcException(new Status(StatusCode.InvalidArgument, "Can't find record in Db with this id"));
+            if (entity == null) 
+                throw new RpcException(new Status(StatusCode.InvalidArgument, "Can't find record in Db with this id"));
+            
+            postsRepository.Delete(entity);
+            await postsRepository.CompleteAsync();
 
-            postsRepository.Complete();
-
-            return Task.FromResult(new DeleteResponse
+            return new DeleteResponse
             {
                 Post = new Post
                 {
@@ -52,7 +55,7 @@ namespace PostsService.Services
                     Name = entity.Name,
                     River = entity.River,
                 }
-            });
+            };
         }
 
         //НОВОЕ
@@ -78,14 +81,14 @@ namespace PostsService.Services
         }
 
 
-        public override Task<GetResponse> Get(GetRequest request, ServerCallContext context)
+        public override async Task<GetResponse> Get(GetRequest request, ServerCallContext context)
         {
             Guid guid = Guid.Parse(request.Id);
-            var post = postsRepository.Get(guid);
+            Posts post = await postsRepository.GetAsync(guid);
 
             if (post == null) throw new RpcException(new Status(StatusCode.InvalidArgument, "Can't find record in Db with this id"));
 
-            return Task.FromResult(new GetResponse
+            return new GetResponse
             {
                 Post = new Post()
                 {
@@ -94,7 +97,7 @@ namespace PostsService.Services
                     Name = post.Name,
                     River = post.River
                 }
-            });
+            };
         }
 
 

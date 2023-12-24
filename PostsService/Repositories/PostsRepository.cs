@@ -95,20 +95,13 @@ namespace PostsService.Repositories
 
             for (int i = 0; i < posts.Count; i++)
             {
-                bool flag = true;
-
                 for (int j = 0; j < search_words.Count; j++)
                 {
                     if (!SearchSubstringInDb(posts[i], search_words[j]))
-                    {
-                        flag = false;
+                    { 
+                        posts_to_delete.Add(posts[i]);
                         break;
                     }
-                }
-
-                if (!flag)
-                {
-                    posts_to_delete.Add(posts[i]);
                 }
             }
 

@@ -1,50 +1,63 @@
-﻿
-using Grpc.Core;
-using Npgsql;
-using PostsService.Exceptions;
-using PostsService.Protos;
-using PostsService.Repositories;
-using System.Data.Common;
+﻿using Grpc.Core;
+using Microsoft.Extensions.Hosting;
+using Newtonsoft.Json;
+using PostsService.Cache;
 using PostsService.Entities;
 using PostsService.Protos;
-using System.ComponentModel.DataAnnotations;
-using Microsoft.Extensions.Hosting;
-using Microsoft.EntityFrameworkCore;
-using static Grpc.Core.Metadata;
+using PostsService.Repositories;
+using StackExchange.Redis;
 using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Threading.Tasks;
 
 namespace PostsService.Services
 {
-    public class PostsServiceImpl:Protos.PostsService.PostsServiceBase
+    public class PostsServiceImpl : Protos.PostsService.PostsServiceBase
     {
-        PostsRepository postsRepository;
-        public PostsServiceImpl(PostsRepository postsRepository) 
+        private readonly PostsRepository _postsRepository;
+        private readonly CacheService _cacheService;
+
+        public PostsServiceImpl(PostsRepository postsRepository, CacheService cacheService)
         {
-            this.postsRepository = postsRepository;
+            _postsRepository = postsRepository ?? throw new ArgumentNullException(nameof(postsRepository));
+            _cacheService = cacheService ?? throw new ArgumentNullException(nameof(cacheService));
         }
-        public override async Task<CreateResponse> Create(CreateRequest request,ServerCallContext context)
+
+        public override async Task<CreateResponse> Create(CreateRequest request, ServerCallContext context)
         {
-            Guid post_id = Guid.Parse(request.Post.Id);
-            Posts post = new Posts() { Id = post_id, Code = request.Post.Code, Name = request.Post.Name, River = request.Post.River };
+            Guid postId = Guid.Parse(request.Post.Id);
+            Posts post = new Posts() { Id = postId, Code = request.Post.Code, Name = request.Post.Name, River = request.Post.River };
 
-            if (await postsRepository.GetAsync(post_id) != null) 
-                throw new RpcException(new Status(StatusCode.AlreadyExists, "This record already exist in Db"));
+            if (await _postsRepository.GetAsync(postId) != null)
+            {
+                throw new RpcException(new Status(StatusCode.AlreadyExists, "This record already exists in the database"));
+            }
 
-            Posts added_post = await postsRepository.AddAsync(post);
-            await postsRepository.CompleteAsync();
+            Posts addedPost = await _postsRepository.AddAsync(post);
+            await _postsRepository.CompleteAsync();
+
+            // Обновляем кэш
+            _cacheService.AddOrUpdateCache($"post:{addedPost.Id}", addedPost);
 
             return new CreateResponse { Post = request.Post };
         }
+
         public override async Task<DeleteResponse> Delete(DeleteRequest request, ServerCallContext context)
         {
-            Guid post_id = Guid.Parse(request.Id);
-            Posts entity = await postsRepository.GetAsync(post_id);
+            Guid postId = Guid.Parse(request.Id);
+            Posts entity = await _postsRepository.GetAsync(postId);
 
-            if (entity == null) 
-                throw new RpcException(new Status(StatusCode.InvalidArgument, "Can't find record in Db with this id"));
-            
-            postsRepository.Delete(entity);
-            await postsRepository.CompleteAsync();
+            if (entity == null)
+            {
+                throw new RpcException(new Status(StatusCode.InvalidArgument, "Can't find a record in the database with this id"));
+            }
+
+            _postsRepository.Delete(entity);
+            await _postsRepository.CompleteAsync();
+
+            // Удаляем из кэша
+            _cacheService.ClearCache($"post:{entity.Id}");
 
             return new DeleteResponse
             {
@@ -58,35 +71,60 @@ namespace PostsService.Services
             };
         }
 
-        
         public override async Task<UpdateResponse> Update(UpdateRequest request, ServerCallContext context)
         {
-            Posts entity = new Posts() { Id = Guid.Parse(request.Post.Id), Code = request.Post.Code, Name = request.Post.Name, River = request.Post.River };
-            var entry = postsRepository.Update(entity);
+            Guid postId = Guid.Parse(request.Post.Id);
 
-            if (entry == null) throw new RpcException(new Status(StatusCode.InvalidArgument, "Can't find record in Db with this id"));
+            // Найти существующую сущность по Id
+            var existingPost = _postsRepository.Get(postId);
 
-            await postsRepository.CompleteAsync();
+            if (existingPost == null)
+            {
+                throw new RpcException(new Status(StatusCode.InvalidArgument, "Can't find a record in the database with this id"));
+            }
 
+            // Обновить свойства существующей сущности
+            existingPost.Code = request.Post.Code;
+            existingPost.Name = request.Post.Name;
+            existingPost.River = request.Post.River;
+
+            // Вызвать метод Update для сохранения изменений
+            _postsRepository.Update(existingPost);
+            await _postsRepository.CompleteAsync();
+
+            // Обновить кэш
+            _cacheService.AddOrUpdateCache($"post:{existingPost.Id}", existingPost);
+
+            // Вернуть обновленную сущность
             return new UpdateResponse
             {
                 Post = new Post
                 {
-                    Id = entity.Id.ToString(),
-                    Code = entity.Code,
-                    Name = entity.Name,
-                    River = entity.River,
+                    Id = existingPost.Id.ToString(),
+                    Code = existingPost.Code,
+                    Name = existingPost.Name,
+                    River = existingPost.River,
                 }
             };
         }
 
-
         public override async Task<GetResponse> Get(GetRequest request, ServerCallContext context)
         {
             Guid guid = Guid.Parse(request.Id);
-            Posts post = await postsRepository.GetAsync(guid);
+            Posts post = _cacheService.GetFromCache<Posts>($"post:{guid}");
 
-            if (post == null) throw new RpcException(new Status(StatusCode.InvalidArgument, "Can't find record in Db with this id"));
+            if (post == null)
+            {
+                // Если записи нет в кэше, пытаемся получить из базы данных
+                post = await _postsRepository.GetAsync(guid);
+                if (post == null)
+                {
+                    throw new RpcException(new Status(StatusCode.InvalidArgument, "Can't find a record in the database with this id"));
+                }
+
+                // Если нашли в базе, добавляем в кэш
+                _cacheService.AddOrUpdateCache($"post:{post.Id}", post);
+            }
 
             return new GetResponse
             {
@@ -100,57 +138,30 @@ namespace PostsService.Services
             };
         }
 
-
         public override Task<GetPageResponse> GetPage(GetPageRequest request, ServerCallContext context)
         {
-            uint max_page = (uint) (postsRepository.GetAllPosts().Count() / 10) + 1; //Кол-во страниц
-            var posts = postsRepository.GetPage((int)request.PageNumber, 10);
-            
-            if(!posts.Any()) throw new RpcException(new Status(StatusCode.InvalidArgument, "Can't find elements in page"));
+            uint maxPage = (uint)(_postsRepository.GetAllPosts().Count() / 10) + 1; // Количество страниц
+            var posts = _cacheService.GetFromCache<List<Posts>>("all_posts");
 
-            GetPageResponse getPageResponse = new();
+            if (posts == null)
+            {
+                // Если записей нет в кэше, получаем из базы и добавляем в кэш
+                posts = _postsRepository.GetAllPosts().ToList();
+                _cacheService.AddOrUpdateCache("all_posts", posts);
+            }
 
-            foreach(var post in posts) 
+            var pagedPosts = posts.Skip(((int)request.PageNumber - 1) * 10).Take(10).ToList();
+
+            if (!pagedPosts.Any())
+            {
+                throw new RpcException(new Status(StatusCode.InvalidArgument, "Can't find elements on this page"));
+            }
+
+            GetPageResponse getPageResponse = new GetPageResponse();
+
+            foreach (var post in pagedPosts)
             {
                 getPageResponse.Posts.Add(new Post
-                {
-                    Id = post.Id.ToString(),
-                    Name = post.Name,
-                    Code = post.Code,
-                    River=post.River
-                });
-            }
-
-            getPageResponse.PageNumber = request.PageNumber;
-            getPageResponse.MaxPageNumber = max_page;
-
-            return Task.FromResult(getPageResponse);
-        }
-
-        public override Task<FindResponse> Find(FindRequest request, ServerCallContext context)
-        {
-            if (string.IsNullOrEmpty(request.Substring))
-                throw new RpcException(new Status(StatusCode.InvalidArgument, "Request has empty string"));
-
-            List<string> words = request.Substring.Split(' ').ToList();
-
-            // Если слов в подстроке больше, чем атрибутов в Posts, кидаем RpcException
-            if (words.Count > 4) throw new RpcException(new Status(StatusCode.InvalidArgument, "Too many words in the substring."));
-
-            foreach (var word in words)
-            {
-                word.ToLower();
-            }
-
-            List<Posts> posts = postsRepository.SearchWithSubstring(words).ToList();
-            if (posts.Count == 0) 
-                throw new RpcException(new Status(StatusCode.InvalidArgument, "Haven't found record in db with this substring"));
-
-            List<Post> response_posts = new();
-
-            foreach (var post in posts)
-            {
-                response_posts.Add(new Post
                 {
                     Id = post.Id.ToString(),
                     Name = post.Name,
@@ -159,8 +170,58 @@ namespace PostsService.Services
                 });
             }
 
-            FindResponse response = new();
-            response.Posts.AddRange(response_posts);
+            getPageResponse.PageNumber = request.PageNumber;
+            getPageResponse.MaxPageNumber = maxPage;
+
+            return Task.FromResult(getPageResponse);
+        }
+
+        public override Task<FindResponse> Find(FindRequest request, ServerCallContext context)
+        {
+            if (string.IsNullOrEmpty(request.Substring))
+            {
+                throw new RpcException(new Status(StatusCode.InvalidArgument, "Request has an empty string"));
+            }
+
+            List<string> words = request.Substring.Split(' ').ToList();
+            words.ForEach(word => word.ToLower());
+
+            List<Posts> posts = _cacheService.GetFromCache<List<Posts>>("all_posts");
+
+            if (posts == null)
+            {
+                // Если записей нет в кэше, получаем из базы и добавляем в кэш
+                posts = _postsRepository.GetAllPosts().ToList();
+                _cacheService.AddOrUpdateCache("all_posts", posts);
+            }
+
+            List<Post> responsePosts = new List<Post>();
+
+            foreach (var post in posts)
+            {
+                if (words.All(word =>
+                    post.Id.ToString().Contains(word) ||
+                    post.Name.ToLower().Contains(word) ||
+                    post.Code.ToLower().Contains(word) ||
+                    post.River.ToLower().Contains(word)))
+                {
+                    responsePosts.Add(new Post
+                    {
+                        Id = post.Id.ToString(),
+                        Name = post.Name,
+                        Code = post.Code,
+                        River = post.River
+                    });
+                }
+            }
+
+            if (!responsePosts.Any())
+            {
+                throw new RpcException(new Status(StatusCode.InvalidArgument, "Haven't found a record in the database with this substring"));
+            }
+
+            FindResponse response = new FindResponse();
+            response.Posts.AddRange(responsePosts);
 
             return Task.FromResult(response);
         }

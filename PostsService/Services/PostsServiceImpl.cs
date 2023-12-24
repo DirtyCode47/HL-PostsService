@@ -58,17 +58,17 @@ namespace PostsService.Services
             };
         }
 
-        //НОВОЕ
-        public override Task<UpdateResponse> Update(UpdateRequest request, ServerCallContext context)
+        
+        public override async Task<UpdateResponse> Update(UpdateRequest request, ServerCallContext context)
         {
             Posts entity = new Posts() { Id = Guid.Parse(request.Post.Id), Code = request.Post.Code, Name = request.Post.Name, River = request.Post.River };
             var entry = postsRepository.Update(entity);
 
             if (entry == null) throw new RpcException(new Status(StatusCode.InvalidArgument, "Can't find record in Db with this id"));
 
-            postsRepository.Complete();
+            await postsRepository.CompleteAsync();
 
-            return Task.FromResult(new UpdateResponse
+            return new UpdateResponse
             {
                 Post = new Post
                 {
@@ -77,7 +77,7 @@ namespace PostsService.Services
                     Name = entity.Name,
                     River = entity.River,
                 }
-            });
+            };
         }
 
 

@@ -41,7 +41,7 @@ namespace PostsService.Repositories
         }
 
 
-        //НОВОЕ
+        
         public Posts Update(Posts post)
         {
             return _dbContext.Posts.Update(post).Entity;
@@ -52,14 +52,14 @@ namespace PostsService.Repositories
             throw new NotImplementedException();
         }
 
-        //НОВОЕ
+        
         public IEnumerable<Posts> GetPage(int page, int page_size)
         {
             List<Posts> allPosts = GetAllPosts().ToList();
             return allPosts.GetRange(((page - 1) * page_size), page_size).ToArray();
         }
 
-        //НОВОЕ
+        
         public IEnumerable<Posts> GetAllPosts()
         {
             return _dbContext.Posts;

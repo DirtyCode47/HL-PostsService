@@ -129,7 +129,37 @@ namespace PostsService.Services
 
         public override Task<FindResponse> Find(FindRequest request, ServerCallContext context)
         {
-            return Task.FromResult(new FindResponse { });
+            if (string.IsNullOrEmpty(request.Substring))
+                throw new RpcException(new Status(StatusCode.InvalidArgument, "Request has empty string"));
+
+            List<string> words = request.Substring.Split(' ').ToList();
+
+            // Если слов в подстроке больше, чем атрибутов в Posts, кидаем RpcException
+            if (words.Count > 4) throw new RpcException(new Status(StatusCode.InvalidArgument, "Too many words in the substring."));
+
+            foreach (var word in words)
+            {
+                word.ToLower();
+            }
+
+            List<Posts> posts = postsRepository.SearchWithSubstring(words).ToList();
+            List<Post> response_posts = new();
+
+            foreach (var post in posts)
+            {
+                response_posts.Add(new Post
+                {
+                    Id = post.Id.ToString(),
+                    Name = post.Name,
+                    Code = post.Code,
+                    River = post.River
+                });
+            }
+
+            FindResponse response = new();
+            response.Posts.AddRange(response_posts);
+
+            return Task.FromResult(response);
         }
     }
 }

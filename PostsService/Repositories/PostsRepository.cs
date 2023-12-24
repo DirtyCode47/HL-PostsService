@@ -80,6 +80,59 @@ namespace PostsService.Repositories
             return await _dbContext.Posts.AnyAsync(post => post.Id == postId);
         }
 
+        public IEnumerable<Posts> SearchWithSubstring(List<string> search_words)
+        {
+            var all_posts = _dbContext.Posts;
+            if (search_words.Count == 1)
+            {
+                return all_posts
+                       .AsEnumerable()
+                       .Where(post => SearchSubstringInDb(post, search_words[0]));
+            }
+
+            List<Posts> posts = all_posts.ToList();
+            List<Posts> posts_to_delete = new();
+
+            for (int i = 0; i < posts.Count; i++)
+            {
+                bool flag = true;
+
+                for (int j = 0; j < search_words.Count; j++)
+                {
+                    if (!SearchSubstringInDb(posts[i], search_words[j]))
+                    {
+                        flag = false;
+                        break;
+                    }
+                }
+
+                if (!flag)
+                {
+                    posts_to_delete.Add(posts[i]);
+                }
+            }
+
+            foreach (var element in posts_to_delete)
+            {
+                posts.Remove(element);
+            }
+
+            return posts;
+
+
+        }
+        private bool ContainsSubstring(string original, string substring)
+        {
+            return original.ToLower().Contains(substring.ToLower());
+        }
+        private bool SearchSubstringInDb(Posts post, string substring)
+        {
+            return ContainsSubstring(post.Id.ToString().ToLower(), substring) ||
+                            ContainsSubstring(post.Code.ToLower(), substring) ||
+                            ContainsSubstring(post.Name.ToLower(), substring) ||
+                            ContainsSubstring(post.River.ToLower(), substring);
+        }
+
         public void Complete()
         {
             _dbContext.SaveChanges();

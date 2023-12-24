@@ -141,13 +141,16 @@ namespace PostsService.Services
         public override Task<GetPageResponse> GetPage(GetPageRequest request, ServerCallContext context)
         {
             uint maxPage = (uint)(_postsRepository.GetAllPosts().Count() / 10) + 1; // Количество страниц
-            var posts = _cacheService.GetFromCache<List<Posts>>("all_posts");
+            var posts = _cacheService.GetAllFromCache<Posts>("post:*");
 
             if (posts == null)
             {
                 // Если записей нет в кэше, получаем из базы и добавляем в кэш
                 posts = _postsRepository.GetAllPosts().ToList();
-                _cacheService.AddOrUpdateCache("all_posts", posts);
+                foreach (var post in posts)
+                {
+                    _cacheService.AddOrUpdateCache($"post:{post.Id}", post);
+                }
             }
 
             var pagedPosts = posts.Skip(((int)request.PageNumber - 1) * 10).Take(10).ToList();
@@ -183,16 +186,19 @@ namespace PostsService.Services
                 throw new RpcException(new Status(StatusCode.InvalidArgument, "Request has an empty string"));
             }
 
-            List<string> words = request.Substring.Split(' ').ToList();
-            words.ForEach(word => word.ToLower());
+            string lower_substring = request.Substring.ToLower();
+            List<string> words = lower_substring.Split(' ').ToList();
 
-            List<Posts> posts = _cacheService.GetFromCache<List<Posts>>("all_posts");
+            List<Posts> posts = _cacheService.GetAllFromCache<Posts>("post:*");
 
             if (posts == null)
             {
                 // Если записей нет в кэше, получаем из базы и добавляем в кэш
                 posts = _postsRepository.GetAllPosts().ToList();
-                _cacheService.AddOrUpdateCache("all_posts", posts);
+                foreach (var post in posts) 
+                {
+                    _cacheService.AddOrUpdateCache($"post:{post.Id}", post);
+                }
             }
 
             List<Post> responsePosts = new List<Post>();
@@ -200,7 +206,7 @@ namespace PostsService.Services
             foreach (var post in posts)
             {
                 if (words.All(word =>
-                    post.Id.ToString().Contains(word) ||
+                    post.Id.ToString().ToLower().Contains(word) ||
                     post.Name.ToLower().Contains(word) ||
                     post.Code.ToLower().Contains(word) ||
                     post.River.ToLower().Contains(word)))

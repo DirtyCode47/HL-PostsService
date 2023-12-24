@@ -111,8 +111,6 @@ namespace PostsService.Repositories
             }
 
             return posts;
-
-
         }
         private bool ContainsSubstring(string original, string substring)
         {

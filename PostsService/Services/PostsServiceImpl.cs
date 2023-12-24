@@ -143,6 +143,9 @@ namespace PostsService.Services
             }
 
             List<Posts> posts = postsRepository.SearchWithSubstring(words).ToList();
+            if (posts.Count == 0) 
+                throw new RpcException(new Status(StatusCode.InvalidArgument, "Haven't found record in db with this substring"));
+
             List<Post> response_posts = new();
 
             foreach (var post in posts)

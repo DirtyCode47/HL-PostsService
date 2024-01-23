@@ -8,6 +8,7 @@ service PostsService {
 	rpc GetPage(GetPageRequest) returns (GetPageResponse);
 	rpc Get(GetRequest) returns (GetResponse);
 	rpc Find(FindRequest) returns (FindResponse);
+	rpc GetAll(GetAllRequest) returns (GetAllResponse);
 }
 
 message Post {
@@ -62,7 +63,7 @@ message GetPageResponse {
 
 
 message GetRequest {
-    string code = 1;
+    string id = 1;
 }
 
 message GetResponse {
@@ -79,6 +80,14 @@ message FindResponse {
 	repeated Post posts = 1; 
 }
 
+
+
+message GetAllRequest{
+
+}
+message GetAllResponse{
+	repeated Post posts = 1;
+}
 
 
 

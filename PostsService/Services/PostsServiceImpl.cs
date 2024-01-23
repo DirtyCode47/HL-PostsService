@@ -153,6 +153,7 @@ namespace PostsService.Services
                 }
             }
 
+            posts.Sort((a, b) => a.Code.CompareTo(b.Code));
             var pagedPosts = posts.Skip(((int)request.PageNumber - 1) * 10).Take(10).ToList();
 
             if (!pagedPosts.Any())
@@ -191,6 +192,7 @@ namespace PostsService.Services
 
             List<Posts> posts = _cacheService.GetAllFromCache<Posts>("post:*");
 
+
             if (posts == null)
             {
                 // Если записей нет в кэше, получаем из базы и добавляем в кэш
@@ -201,7 +203,8 @@ namespace PostsService.Services
                 }
             }
 
-            List<Post> responsePosts = new List<Post>();
+            posts.Sort((a,b) => a.Code.CompareTo(b.Code));
+            var responsePosts = new List<Post>();
 
             foreach (var post in posts)
             {
@@ -228,6 +231,31 @@ namespace PostsService.Services
 
             FindResponse response = new FindResponse();
             response.Posts.AddRange(responsePosts);
+
+            return Task.FromResult(response);
+        }
+
+        public override Task<GetAllResponse> GetAll(GetAllRequest request, ServerCallContext context)
+        {
+            var posts = _cacheService.GetAllFromCache<Posts>("post:*");
+
+            if (posts == null)
+            {
+                posts = _postsRepository.GetAllPosts().ToList();
+            }
+
+            var response = new GetAllResponse();
+
+            foreach (var post in posts)
+            {
+                response.Posts.Add(new Post
+                {
+                    Id = post.Id.ToString(),
+                    Name = post.Name,
+                    Code = post.Code,
+                    River = post.River
+                });
+            }
 
             return Task.FromResult(response);
         }

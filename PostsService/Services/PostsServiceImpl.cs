@@ -26,12 +26,21 @@ namespace PostsService.Services
 
         public override async Task<CreateResponse> Create(CreateRequest request, ServerCallContext context)
         {
-            Guid postId = Guid.Parse(request.Post.Id);
+            //Guid postId = Guid.Parse(request.Post.Id);
+
+            Guid postId = Guid.NewGuid();
             Posts post = new Posts() { Id = postId, Code = request.Post.Code, Name = request.Post.Name, River = request.Post.River };
 
+
+            
             if (await _postsRepository.GetAsync(postId) != null)
             {
-                throw new RpcException(new Status(StatusCode.AlreadyExists, "This record already exists in the database"));
+                throw new RpcException(new Status(StatusCode.AlreadyExists, "Record with this id already exists in the database"));
+            }
+
+            if (await _postsRepository.FindByCode(request.Post.Code) != null)
+            {
+                throw new RpcException(new Status(StatusCode.AlreadyExists, "Record with this post code already exists in the database"));
             }
 
             Posts addedPost = await _postsRepository.AddAsync(post);
@@ -81,6 +90,11 @@ namespace PostsService.Services
             if (existingPost == null)
             {
                 throw new RpcException(new Status(StatusCode.InvalidArgument, "Can't find a record in the database with this id"));
+            }
+
+            if(await _postsRepository.FindByCode(request.Post.Code) != null)
+            {
+                throw new RpcException(new Status(StatusCode.InvalidArgument, "Post with such code already exists in DB"));
             }
 
             // Обновить свойства существующей сущности

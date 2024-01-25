@@ -35,6 +35,11 @@ namespace PostsService.Repositories
             return await _dbContext.Posts.FindAsync(id);
         }
 
+        public async Task<Posts> FindByCode(string code)
+        {
+            return await _dbContext.Posts.FirstOrDefaultAsync(p => p.Code == code);
+        }
+
         public Posts Delete(Posts post)
         {
             return _dbContext.Posts.Remove(post).Entity;

@@ -54,7 +54,11 @@ namespace PostsService.Services
 
         public override async Task<DeleteResponse> Delete(DeleteRequest request, ServerCallContext context)
         {
-            Guid postId = Guid.Parse(request.Id);
+            if(!Guid.TryParse(request.Id,out Guid postId))
+            {
+                throw new RpcException(new Status(StatusCode.InvalidArgument, "Uncorrect guid format"));
+            }
+            
             Posts entity = await _postsRepository.GetAsync(postId);
 
             if (entity == null)
@@ -82,7 +86,10 @@ namespace PostsService.Services
 
         public override async Task<UpdateResponse> Update(UpdateRequest request, ServerCallContext context)
         {
-            Guid postId = Guid.Parse(request.Post.Id);
+            if (!Guid.TryParse(request.Post.Id, out Guid postId))
+            {
+                throw new RpcException(new Status(StatusCode.InvalidArgument, "Uncorrect guid format"));
+            }
 
             // Найти существующую сущность по Id
             var existingPost = _postsRepository.Get(postId);
@@ -124,7 +131,11 @@ namespace PostsService.Services
 
         public override async Task<GetResponse> Get(GetRequest request, ServerCallContext context)
         {
-            Guid guid = Guid.Parse(request.Id);
+            if (!Guid.TryParse(request.Id, out Guid guid))
+            {
+                throw new RpcException(new Status(StatusCode.InvalidArgument, "Uncorrect guid format"));
+            }
+
             Posts post = _cacheService.GetFromCache<Posts>($"post:{guid}");
 
             if (post == null)
@@ -255,8 +266,9 @@ namespace PostsService.Services
 
             if (posts == null)
             {
-                posts = _postsRepository.GetAllPosts().ToList();
-            }
+                posts = _postsRepository.GetAllPosts().ToList(); //Надо не забыть добавить в кэш
+            }  
+            
 
             var response = new GetAllResponse();
 

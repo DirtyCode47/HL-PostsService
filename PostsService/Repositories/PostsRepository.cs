@@ -7,7 +7,7 @@ using static Grpc.Core.Metadata;
 
 namespace PostsService.Repositories
 {
-    public class PostsRepository : IPostsReepository
+    public class PostsRepository
     {
         private PostsServiceDbContext _dbContext;
         public PostsRepository(PostsServiceDbContext dbContext)
@@ -35,7 +35,7 @@ namespace PostsService.Repositories
             return await _dbContext.Posts.FindAsync(id);
         }
 
-        public async Task<Posts> FindByCode(string code)
+        public async Task<Posts> FindByCodeAsync(string code)
         {
             return await _dbContext?.Posts?.FirstOrDefaultAsync(p => p.Code == code);
         }
@@ -57,14 +57,28 @@ namespace PostsService.Repositories
             throw new NotImplementedException();
         }
 
-        
-        public IEnumerable<Posts> GetPage(int page, int page_size)
+
+        //public IEnumerable<Posts> GetPage(int page, int page_size)
+        //{
+        //    List<Posts> allPosts = GetAllPosts().ToList();
+        //    return allPosts.GetRange(((page - 1) * page_size), page_size).ToArray();
+        //}
+
+
+        public async Task<(IEnumerable<Posts> postPage,uint maxPage)> GetPageAsync(uint page_num, uint page_size)
         {
-            List<Posts> allPosts = GetAllPosts().ToList();
-            return allPosts.GetRange(((page - 1) * page_size), page_size).ToArray();
+            var posts = await _dbContext.Posts.ToListAsync();
+
+            uint maxPage = (uint)(posts.Count / 10) + 1; // Количество страниц
+
+            posts.Sort((a, b) => a.Code.CompareTo(b.Code));
+            var pagePosts = posts.Skip(((int)page_num - 1) * 10).Take(10).ToList();
+
+            return (pagePosts,maxPage);
         }
 
-        
+
+
         public IEnumerable<Posts> GetAllPosts()
         {
             return _dbContext.Posts;
@@ -85,49 +99,52 @@ namespace PostsService.Repositories
             return await _dbContext.Posts.AnyAsync(post => post.Id == postId);
         }
 
-        public IEnumerable<Posts> SearchWithSubstring(List<string> search_words)
-        {
-            var all_posts = _dbContext.Posts;
-            if (search_words.Count == 1)
-            {
-                return all_posts
-                       .AsEnumerable()
-                       .Where(post => SearchSubstringInDb(post, search_words[0]));
-            }
+        //public IEnumerable<Posts> SearchWithSubstring(List<string> search_words)
+        //{
+        //    var all_posts = _dbContext.Posts;
+        //    if (search_words.Count == 1)
+        //    {
+        //        return all_posts
+        //               .AsEnumerable()
+        //               .Where(post => SearchSubstringInDb(post, search_words[0]));
+        //    }
 
-            List<Posts> posts = all_posts.ToList();
-            List<Posts> posts_to_delete = new();
+        //    List<Posts> posts = all_posts.ToList();
+        //    List<Posts> posts_to_delete = new();
 
-            for (int i = 0; i < posts.Count; i++)
-            {
-                for (int j = 0; j < search_words.Count; j++)
-                {
-                    if (!SearchSubstringInDb(posts[i], search_words[j]))
-                    { 
-                        posts_to_delete.Add(posts[i]);
-                        break;
-                    }
-                }
-            }
+        //    for (int i = 0; i < posts.Count; i++)
+        //    {
+        //        for (int j = 0; j < search_words.Count; j++)
+        //        {
+        //            if (!SearchSubstringInDb(posts[i], search_words[j]))
+        //            { 
+        //                posts_to_delete.Add(posts[i]);
+        //                break;
+        //            }
+        //        }
+        //    }
 
-            foreach (var element in posts_to_delete)
-            {
-                posts.Remove(element);
-            }
+        //    foreach (var element in posts_to_delete)
+        //    {
+        //        posts.Remove(element);
+        //    }
 
-            return posts;
-        }
-        private bool ContainsSubstring(string original, string substring)
-        {
-            return original.ToLower().Contains(substring.ToLower());
-        }
-        private bool SearchSubstringInDb(Posts post, string substring)
-        {
-            return ContainsSubstring(post.Id.ToString().ToLower(), substring) ||
-                            ContainsSubstring(post.Code.ToLower(), substring) ||
-                            ContainsSubstring(post.Name.ToLower(), substring) ||
-                            ContainsSubstring(post.River.ToLower(), substring);
-        }
+        //    return posts;
+        //}
+        //private bool ContainsSubstring(string original, string substring)
+        //{
+        //    return original.ToLower().Contains(substring.ToLower());
+        //}
+        //private bool SearchSubstringInDb(Posts post, string substring)
+        //{
+        //    return ContainsSubstring(post.Id.ToString().ToLower(), substring) ||
+        //                    ContainsSubstring(post.Code.ToLower(), substring) ||
+        //                    ContainsSubstring(post.Name.ToLower(), substring) ||
+        //                    ContainsSubstring(post.River.ToLower(), substring);
+        //}
+
+
+
 
         public void Complete()
         {

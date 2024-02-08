@@ -37,7 +37,7 @@ namespace PostsService.Repositories
 
         public async Task<Posts> FindByCode(string code)
         {
-            return await _dbContext.Posts.FirstOrDefaultAsync(p => p.Code == code);
+            return await _dbContext?.Posts?.FirstOrDefaultAsync(p => p.Code == code);
         }
 
         public Posts Delete(Posts post)

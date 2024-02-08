@@ -1,7 +1,6 @@
 ﻿using Grpc.Core;
 using Microsoft.Extensions.Hosting;
 using Newtonsoft.Json;
-using PostsService.Cache;
 using PostsService.Entities;
 using PostsService.Protos;
 using PostsService.Repositories;
@@ -16,12 +15,10 @@ namespace PostsService.Services
     public class PostsServiceImpl : Protos.PostsService.PostsServiceBase
     {
         private readonly PostsRepository _postsRepository;
-        private readonly CacheService _cacheService;
 
-        public PostsServiceImpl(PostsRepository postsRepository, CacheService cacheService)
+        public PostsServiceImpl(PostsRepository postsRepository)
         {
             _postsRepository = postsRepository ?? throw new ArgumentNullException(nameof(postsRepository));
-            _cacheService = cacheService ?? throw new ArgumentNullException(nameof(cacheService));
         }
 
         public override async Task<CreateResponse> Create(CreateRequest request, ServerCallContext context)
@@ -46,8 +43,6 @@ namespace PostsService.Services
             Posts addedPost = await _postsRepository.AddAsync(post);
             await _postsRepository.CompleteAsync();
 
-            // Обновляем кэш
-            _cacheService.AddOrUpdateCache($"post:{addedPost.Id}", addedPost);
 
             return new CreateResponse { Post = request.Post };
         }
@@ -69,8 +64,6 @@ namespace PostsService.Services
             _postsRepository.Delete(entity);
             await _postsRepository.CompleteAsync();
 
-            // Удаляем из кэша
-            _cacheService.ClearCache($"post:{entity.Id}");
 
             return new DeleteResponse
             {
@@ -113,8 +106,6 @@ namespace PostsService.Services
             _postsRepository.Update(existingPost);
             await _postsRepository.CompleteAsync();
 
-            // Обновить кэш
-            _cacheService.AddOrUpdateCache($"post:{existingPost.Id}", existingPost);
 
             // Вернуть обновленную сущность
             return new UpdateResponse
@@ -136,19 +127,11 @@ namespace PostsService.Services
                 throw new RpcException(new Status(StatusCode.InvalidArgument, "Uncorrect guid format"));
             }
 
-            Posts post = _cacheService.GetFromCache<Posts>($"post:{guid}");
+            var post = await _postsRepository.GetAsync(guid);
 
             if (post == null)
             {
-                // Если записи нет в кэше, пытаемся получить из базы данных
-                post = await _postsRepository.GetAsync(guid);
-                if (post == null)
-                {
-                    throw new RpcException(new Status(StatusCode.InvalidArgument, "Can't find a record in the database with this id"));
-                }
-
-                // Если нашли в базе, добавляем в кэш
-                _cacheService.AddOrUpdateCache($"post:{post.Id}", post);
+                throw new RpcException(new Status(StatusCode.InvalidArgument, "Can't find a record in the database with this id"));
             }
 
             return new GetResponse
@@ -166,17 +149,9 @@ namespace PostsService.Services
         public override Task<GetPageResponse> GetPage(GetPageRequest request, ServerCallContext context)
         {
             uint maxPage = (uint)(_postsRepository.GetAllPosts().Count() / 10) + 1; // Количество страниц
-            var posts = _cacheService.GetAllFromCache<Posts>("post:*");
-
-            if (posts == null)
-            {
-                // Если записей нет в кэше, получаем из базы и добавляем в кэш
-                posts = _postsRepository.GetAllPosts().ToList();
-                foreach (var post in posts)
-                {
-                    _cacheService.AddOrUpdateCache($"post:{post.Id}", post);
-                }
-            }
+            
+            var posts = _postsRepository.GetAllPosts().ToList();
+                
 
             posts.Sort((a, b) => a.Code.CompareTo(b.Code));
             var pagedPosts = posts.Skip(((int)request.PageNumber - 1) * 10).Take(10).ToList();
@@ -215,20 +190,9 @@ namespace PostsService.Services
             string lower_substring = request.Substring.ToLower();
             List<string> words = lower_substring.Split(' ').ToList();
 
-            List<Posts> posts = _cacheService.GetAllFromCache<Posts>("post:*");
-
-
-            if (posts == null)
-            {
-                // Если записей нет в кэше, получаем из базы и добавляем в кэш
-                posts = _postsRepository.GetAllPosts().ToList();
-                foreach (var post in posts) 
-                {
-                    _cacheService.AddOrUpdateCache($"post:{post.Id}", post);
-                }
-            }
-
+            List<Posts> posts = _postsRepository.GetAllPosts().ToList();
             posts.Sort((a,b) => a.Code.CompareTo(b.Code));
+
             var responsePosts = new List<Post>();
 
             foreach (var post in posts)
@@ -262,12 +226,8 @@ namespace PostsService.Services
 
         public override Task<GetAllResponse> GetAll(GetAllRequest request, ServerCallContext context)
         {
-            var posts = _cacheService.GetAllFromCache<Posts>("post:*");
-
-            if (posts == null)
-            {
-                posts = _postsRepository.GetAllPosts().ToList(); //Надо не забыть добавить в кэш
-            }  
+            
+            var posts = _postsRepository.GetAllPosts().ToList(); //Надо не забыть добавить в кэш
             
 
             var response = new GetAllResponse();

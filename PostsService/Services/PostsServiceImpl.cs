@@ -78,7 +78,6 @@ namespace PostsService.Services
                 throw new RpcException(new Status(StatusCode.InvalidArgument, "Uncorrect guid format"));
             }
 
-            // Найти существующую сущность по Id
             var existingPost = await _postsRepository.GetAsync(postId);
 
             if (existingPost == null)
@@ -91,17 +90,13 @@ namespace PostsService.Services
                 throw new RpcException(new Status(StatusCode.InvalidArgument, "Post with such code already exists in DB"));
             }
 
-            // Обновить свойства существующей сущности
             existingPost.Code = request.Post.Code;
             existingPost.Name = request.Post.Name;
             existingPost.River = request.Post.River;
 
-            // Вызвать метод Update для сохранения изменений
             _postsRepository.Update(existingPost);
             await _postsRepository.CompleteAsync();
 
-
-            // Вернуть обновленную сущность
             return new UpdateResponse
             {
                 Post = new Post
@@ -215,10 +210,10 @@ namespace PostsService.Services
             return Task.FromResult(response);
         }
 
-        public override Task<GetAllResponse> GetAll(GetAllRequest request, ServerCallContext context)
+        public override async Task<GetAllResponse> GetAll(GetAllRequest request, ServerCallContext context)
         {
             
-            var posts = _postsRepository.GetAllPosts().ToList(); //Надо не забыть добавить в кэш
+            var posts = await _postsRepository.GetAllPostsAsync(); //Надо не забыть добавить в кэш
             
 
             var response = new GetAllResponse();
@@ -234,7 +229,7 @@ namespace PostsService.Services
                 });
             }
 
-            return Task.FromResult(response);
+            return response;
         }
     }
 }

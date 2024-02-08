@@ -84,6 +84,11 @@ namespace PostsService.Repositories
             return _dbContext.Posts;
         }
 
+        public async Task<IEnumerable<Posts>> GetAllPostsAsync()
+        {
+            return await _dbContext.Posts.ToListAsync();
+        }
+
         public bool IsAny(Expression<Func<Posts,bool>> predicate)
         {
             return _dbContext.Posts.Any(predicate);

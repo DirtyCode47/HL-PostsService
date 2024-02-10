@@ -8,6 +8,8 @@ using PostsService.Repositories;
 using PostsService.Services;
 using StackExchange.Redis;
 using Newtonsoft.Json;
+using Confluent.Kafka;
+using PostsService.Kafka;
 
 namespace PostsService
 {
@@ -27,7 +29,16 @@ namespace PostsService
                 options.UseNpgsql(Configuration.GetConnectionString("DefaultConnection")));
 
             services.AddScoped<PostsRepository>();
+            services.AddScoped<MessageRetryPostsRepository>();
             services.AddScoped<PostsServiceImpl>();
+
+            // В методе ConfigureServices
+            services.AddSingleton(new ProducerConfig
+            {
+                BootstrapServers = Configuration.GetConnectionString("BootstrapServersConnection")
+            });
+
+            services.AddSingleton<IKafkaProducer, KafkaProducer>();
 
             services.AddGrpc();
         }

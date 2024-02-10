@@ -9,16 +9,24 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using Confluent.Kafka;
+//using Newtonsoft.Json;
+using System.Text.Json;
+using static Confluent.Kafka.ConfigPropertyNames;
+using PostsService.Kafka;
 
 namespace PostsService.Services
 {
     public class PostsServiceImpl : Protos.PostsService.PostsServiceBase
     {
+        private readonly MessageRetryPostsRepository _messageRetryPostsRepository;
         private readonly PostsRepository _postsRepository;
-
-        public PostsServiceImpl(PostsRepository postsRepository)
+        private readonly IKafkaProducer _kafkaProducer;
+        public PostsServiceImpl(PostsRepository postsRepository, IKafkaProducer kafkaProducer, MessageRetryPostsRepository messageRetryPostsRepository)
         {
             _postsRepository = postsRepository ?? throw new ArgumentNullException(nameof(postsRepository));
+            _kafkaProducer = kafkaProducer ?? throw new ArgumentNullException(nameof(kafkaProducer));
+            _messageRetryPostsRepository = messageRetryPostsRepository ?? throw new ArgumentNullException(nameof(messageRetryPostsRepository));
         }
 
         public override async Task<CreateResponse> Create(CreateRequest request, ServerCallContext context)
@@ -38,6 +46,30 @@ namespace PostsService.Services
 
             Posts addedPost = await _postsRepository.AddAsync(post);
             await _postsRepository.CompleteAsync();
+
+            try
+            {
+                string JsonAddedPost = System.Text.Json.JsonSerializer.Serialize(addedPost);
+                await _kafkaProducer.SendMessage("posts", JsonAddedPost);
+            }
+            catch (Exception ex)
+            {
+                var messageWithPost = new MessageRetryPosts() { Id = addedPost.Id, Code = addedPost.Code, Name = addedPost.Name, River = addedPost.River };
+                await _messageRetryPostsRepository.AddAsync(messageWithPost);
+                
+                new CreateResponse { Post = request.Post };
+            }
+            
+            //string JsonAddedPost = System.Text.Json.JsonSerializer.Serialize(addedPost);
+
+
+            //var config = new ProducerConfig { BootstrapServers = "localhost:9092" };
+
+            //using (var producer = new ProducerBuilder<Null, string>(config).Build())
+            //{
+            //    var message = new Message<Null, string> { Value = JsonAddedPost };
+            //    var deliveryReport = await producer.ProduceAsync("posts", message);
+            //}
 
             return new CreateResponse { Post = request.Post };
         }
@@ -213,7 +245,7 @@ namespace PostsService.Services
         public override async Task<GetAllResponse> GetAll(GetAllRequest request, ServerCallContext context)
         {
             
-            var posts = await _postsRepository.GetAllPostsAsync(); //Надо не забыть добавить в кэш
+            var posts = await _postsRepository.GetAllPostsAsync(); 
             
 
             var response = new GetAllResponse();

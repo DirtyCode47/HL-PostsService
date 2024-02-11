@@ -1,5 +1,6 @@
 ﻿using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
+using System.Text.Json.Serialization;
 using Microsoft.EntityFrameworkCore;
 
 namespace PostsService.Entities
@@ -21,5 +22,8 @@ namespace PostsService.Entities
         [MaxLength(255)]
         public string River { get; set; }
 
+        [JsonIgnore]
+        [Required]
+        public bool IsKafkaMessageSended { get; set; }    
     }
 }

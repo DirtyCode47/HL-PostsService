@@ -29,15 +29,21 @@ namespace PostsService
                 options.UseNpgsql(Configuration.GetConnectionString("DefaultConnection")));
 
             services.AddScoped<PostsRepository>();
-            services.AddScoped<MessageRetryPostsRepository>();
             services.AddScoped<PostsServiceImpl>();
+
+            services.AddHostedService<BackgroundKafkaSender>();
 
             // В методе ConfigureServices
             services.AddSingleton(new ProducerConfig
             {
-                BootstrapServers = Configuration.GetConnectionString("BootstrapServersConnection")
+                BootstrapServers = Configuration.GetConnectionString("BootstrapServersConnection"),
+                //Retries = 3,
+                //RetryBackoffMaxMs = 1000,
+                //MessageSendMaxRetries = 0
+                //ReconnectBackoffMs
             });
 
+            services.AddSingleton<KafkaProducer>();
             services.AddSingleton<IKafkaProducer, KafkaProducer>();
 
             services.AddGrpc();

@@ -6,7 +6,7 @@ using Microsoft.EntityFrameworkCore.Migrations;
 namespace PostsService.Migrations
 {
     /// <inheritdoc />
-    public partial class PostsTableCreate : Migration
+    public partial class FinalTable : Migration
     {
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
@@ -18,7 +18,8 @@ namespace PostsService.Migrations
                     Id = table.Column<Guid>(type: "uuid", nullable: false),
                     Code = table.Column<string>(type: "character varying(5)", maxLength: 5, nullable: false),
                     Name = table.Column<string>(type: "character varying(255)", maxLength: 255, nullable: false),
-                    River = table.Column<string>(type: "character varying(255)", maxLength: 255, nullable: false)
+                    River = table.Column<string>(type: "character varying(255)", maxLength: 255, nullable: false),
+                    IsKafkaMessageSended = table.Column<bool>(type: "boolean", nullable: false)
                 },
                 constraints: table =>
                 {

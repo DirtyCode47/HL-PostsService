@@ -19,20 +19,18 @@ namespace PostsService.Services
 {
     public class PostsServiceImpl : Protos.PostsService.PostsServiceBase
     {
-        private readonly MessageRetryPostsRepository _messageRetryPostsRepository;
         private readonly PostsRepository _postsRepository;
         private readonly IKafkaProducer _kafkaProducer;
-        public PostsServiceImpl(PostsRepository postsRepository, IKafkaProducer kafkaProducer, MessageRetryPostsRepository messageRetryPostsRepository)
+        public PostsServiceImpl(PostsRepository postsRepository, IKafkaProducer kafkaProducer)
         {
             _postsRepository = postsRepository ?? throw new ArgumentNullException(nameof(postsRepository));
             _kafkaProducer = kafkaProducer ?? throw new ArgumentNullException(nameof(kafkaProducer));
-            _messageRetryPostsRepository = messageRetryPostsRepository ?? throw new ArgumentNullException(nameof(messageRetryPostsRepository));
         }
 
         public override async Task<CreateResponse> Create(CreateRequest request, ServerCallContext context)
         {
             Guid postId = Guid.NewGuid();
-            Posts post = new Posts() { Id = postId, Code = request.Post.Code, Name = request.Post.Name, River = request.Post.River };
+            Posts post = new Posts() { Id = postId, Code = request.Post.Code, Name = request.Post.Name, River = request.Post.River, IsKafkaMessageSended = false };
 
             if (await _postsRepository.GetAsync(postId) != null)
             {
@@ -47,19 +45,29 @@ namespace PostsService.Services
             Posts addedPost = await _postsRepository.AddAsync(post);
             await _postsRepository.CompleteAsync();
 
-            try
-            {
-                string JsonAddedPost = System.Text.Json.JsonSerializer.Serialize(addedPost);
-                await _kafkaProducer.SendMessage("posts", JsonAddedPost);
-            }
-            catch (Exception ex)
-            {
-                var messageWithPost = new MessageRetryPosts() { Id = addedPost.Id, Code = addedPost.Code, Name = addedPost.Name, River = addedPost.River };
-                await _messageRetryPostsRepository.AddAsync(messageWithPost);
-                
-                new CreateResponse { Post = request.Post };
-            }
-            
+            //try
+            //{
+            //    if (_kafkaProducer != null)
+            //    {
+            //        string JsonAddedPost = System.Text.Json.JsonSerializer.Serialize(addedPost);
+            //        await _kafkaProducer.SendMessage("posts", JsonAddedPost);
+            //    }
+            //    else
+            //    {
+            //        var messageWithPost = new MessageRetryPosts() { Id = addedPost.Id, Code = addedPost.Code, Name = addedPost.Name, River = addedPost.River };
+            //        await _messageRetryPostsRepository.AddAsync(messageWithPost);
+            //        await _messageRetryPostsRepository.CompleteAsync();
+            //    }
+            //}
+            //catch (Exception ex)
+            //{
+            //    var messageWithPost = new MessageRetryPosts() { Id = addedPost.Id, Code = addedPost.Code, Name = addedPost.Name, River = addedPost.River };
+            //    await _messageRetryPostsRepository.AddAsync(messageWithPost);
+            //    await _messageRetryPostsRepository.CompleteAsync();
+
+            //    return new CreateResponse { Post = request.Post };
+            //}
+
             //string JsonAddedPost = System.Text.Json.JsonSerializer.Serialize(addedPost);
 
 
@@ -125,6 +133,7 @@ namespace PostsService.Services
             existingPost.Code = request.Post.Code;
             existingPost.Name = request.Post.Name;
             existingPost.River = request.Post.River;
+            existingPost.IsKafkaMessageSended = false;
 
             _postsRepository.Update(existingPost);
             await _postsRepository.CompleteAsync();

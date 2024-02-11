@@ -10,7 +10,7 @@ namespace PostsService.Kafka
             _producer = new ProducerBuilder<Null,string>(producerConfig).Build();
         }
 
-        public async Task SendMessage(string topic,string message)
+        public async Task SendMessage(string topic,string message,CancellationToken token)
         {
             var kafkaMessage = new Message<Null, string> { Value = message };
             await _producer.ProduceAsync(topic, kafkaMessage);

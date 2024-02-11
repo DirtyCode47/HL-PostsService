@@ -1,6 +1,7 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using PostsService.Entities;
 using PostsService.Exceptions;
+using PostsService.Protos;
 using System;
 using System.Linq.Expressions;
 using static Grpc.Core.Metadata;
@@ -78,6 +79,12 @@ namespace PostsService.Repositories
         }
 
 
+        public async Task<List<Posts>> GetUnsentKafkaMessagesAsync()
+        {
+            return await _dbContext.Posts
+                .Where(post => !post.IsKafkaMessageSended)
+                .ToListAsync();
+        }
 
         public IEnumerable<Posts> GetAllPosts()
         {

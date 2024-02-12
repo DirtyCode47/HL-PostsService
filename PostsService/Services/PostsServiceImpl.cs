@@ -207,48 +207,32 @@ namespace PostsService.Services
             return getPageResponse;
         }
 
-        public override Task<FindResponse> Find(FindRequest request, ServerCallContext context)
+        public override async Task<FindResponse> Find(FindRequest request, ServerCallContext context)
         {
             if (string.IsNullOrEmpty(request.Substring))
             {
                 throw new RpcException(new Status(StatusCode.InvalidArgument, "Request has an empty string"));
             }
 
-            string lower_substring = request.Substring.ToLower();
-            List<string> words = lower_substring.Split(' ').ToList();
-
-            List<Posts> posts = _postsRepository.GetAllPosts().ToList();
-            posts.Sort((a,b) => a.Code.CompareTo(b.Code));
+            var FindedPosts = await _postsRepository.FindWithSubstring(request.Substring);
 
             var responsePosts = new List<Post>();
 
-            foreach (var post in posts)
+            foreach (var post in FindedPosts)
             {
-                if (words.All(word =>
-                    post.Id.ToString().ToLower().Contains(word) ||
-                    post.Name.ToLower().Contains(word) ||
-                    post.Code.ToLower().Contains(word) ||
-                    post.River.ToLower().Contains(word)))
+                responsePosts.Add(new Post
                 {
-                    responsePosts.Add(new Post
-                    {
-                        Id = post.Id.ToString(),
-                        Name = post.Name,
-                        Code = post.Code,
-                        River = post.River
-                    });
-                }
-            }
-
-            if (!responsePosts.Any())
-            {
-                throw new RpcException(new Status(StatusCode.InvalidArgument, "Haven't found a record in the database with this substring"));
+                    Id = post.Id.ToString(),
+                    Name = post.Name,
+                    Code = post.Code,
+                    River = post.River
+                });
             }
 
             FindResponse response = new FindResponse();
             response.Posts.AddRange(responsePosts);
 
-            return Task.FromResult(response);
+            return response;
         }
 
         public override async Task<GetAllResponse> GetAll(GetAllRequest request, ServerCallContext context)

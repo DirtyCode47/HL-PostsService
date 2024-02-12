@@ -111,6 +111,33 @@ namespace PostsService.Repositories
             return await _dbContext.Posts.AnyAsync(post => post.Id == postId);
         }
 
+        public async Task<IEnumerable<Posts>> FindWithSubstring(string substring)
+        {
+            string lower_substring = substring.ToLower();
+            List<string> words = lower_substring.Split(' ').ToList();
+
+            var posts = await GetAllPostsAsync();
+            List<Posts> ListPosts = posts.ToList();
+            ListPosts.Sort((a, b) => a.Code.CompareTo(b.Code));
+
+            var responsePosts = new List<Posts>();
+
+
+            foreach (var post in ListPosts)
+            {
+                if (words.All(word =>
+                    post.Id.ToString().ToLower().Contains(word) ||
+                    post.Name.ToLower().Contains(word) ||
+                    post.Code.ToLower().Contains(word) ||
+                    post.River.ToLower().Contains(word)))
+                {
+                    responsePosts.Add(post);
+                }
+            }
+
+            return responsePosts;
+        }
+
         //public IEnumerable<Posts> SearchWithSubstring(List<string> search_words)
         //{
         //    var all_posts = _dbContext.Posts;

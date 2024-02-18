@@ -8,7 +8,8 @@ using PostsService.Repositories;
 using PostsService.Services;
 using StackExchange.Redis;
 using Newtonsoft.Json;
-using PostsService.Cache;
+using Confluent.Kafka;
+using PostsService.Kafka;
 
 namespace PostsService
 {
@@ -23,18 +24,27 @@ namespace PostsService
 
         public void ConfigureServices(IServiceCollection services)
         {
-            services.AddSingleton<IConnectionMultiplexer>(provider =>
-            {
-                var configuration = ConfigurationOptions.Parse(Configuration.GetConnectionString("RedisConnection"));
-                return ConnectionMultiplexer.Connect(configuration);
-            });
-
+      
             services.AddDbContext<PostsServiceDbContext>(options =>
                 options.UseNpgsql(Configuration.GetConnectionString("DefaultConnection")));
 
             services.AddScoped<PostsRepository>();
             services.AddScoped<PostsServiceImpl>();
-            services.AddScoped<CacheService>();
+            services.AddScoped<IPostsReepository, PostsRepository>();
+
+            services.AddHostedService<BackgroundKafkaSender>();
+
+            services.AddSingleton(new ProducerConfig
+            {
+                BootstrapServers = Configuration.GetConnectionString("BootstrapServersConnection"),
+                //Retries = 3,
+                //RetryBackoffMaxMs = 1000,
+                //MessageSendMaxRetries = 0
+                //ReconnectBackoffMs
+            });
+
+            services.AddSingleton<KafkaProducer>();
+            services.AddSingleton<IKafkaProducer, KafkaProducer>();
 
             services.AddGrpc();
         }
@@ -51,24 +61,6 @@ namespace PostsService
                 app.UseHsts();
             }
 
-            app.Use(async (context, next) =>
-            {
-                // Получаем сервис провайдер из контекста запроса
-                var serviceProvider = context.RequestServices;
-
-                // Получаем scoped-сервис PostsRepository
-                var postsRepository = serviceProvider.GetRequiredService<PostsRepository>();
-
-                // Получаем подключение к Redis
-                var connectionMultiplexer = serviceProvider.GetRequiredService<IConnectionMultiplexer>();
-
-                // Инициализируем кэш асинхронно
-                await InitializeCacheAsync(postsRepository, connectionMultiplexer);
-
-                // Передаем управление следующему middleware
-                await next();
-            });
-
             app.UseRouting();
 
 
@@ -77,25 +69,6 @@ namespace PostsService
                 endpoints.MapGrpcService<PostsServiceImpl>();
             });
         }
-        private async Task InitializeCacheAsync(PostsRepository postsRepository, IConnectionMultiplexer connectionMultiplexer)
-        {
-            // Получаем данные из репозитория
-            var posts = postsRepository.GetAllPosts();
-
-            // Подключение к Redis
-            var database = connectionMultiplexer.GetDatabase();
-
-            // Проходим по всем записям и добавляем/обновляем данные в кэше
-            foreach (var post in posts)
-            {
-                var cacheKey = $"post:{post.Id}";
-
-                // Преобразовываем объект в JSON (или любой другой формат)
-                var serializedPost = JsonConvert.SerializeObject(post);
-
-                // Записываем данные в Redis
-                await database.StringSetAsync(cacheKey, serializedPost);
-            }
-        }
+        
     }
 }

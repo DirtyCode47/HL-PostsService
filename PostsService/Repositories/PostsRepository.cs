@@ -1,13 +1,14 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using PostsService.Entities;
 using PostsService.Exceptions;
+using PostsService.Protos;
 using System;
 using System.Linq.Expressions;
 using static Grpc.Core.Metadata;
 
 namespace PostsService.Repositories
 {
-    public class PostsRepository : IPostsReepository
+    public class PostsRepository:IPostsReepository
     {
         private PostsServiceDbContext _dbContext;
         public PostsRepository(PostsServiceDbContext dbContext)
@@ -35,9 +36,9 @@ namespace PostsService.Repositories
             return await _dbContext.Posts.FindAsync(id);
         }
 
-        public async Task<Posts> FindByCode(string code)
+        public async Task<Posts> FindByCodeAsync(string code)
         {
-            return await _dbContext.Posts.FirstOrDefaultAsync(p => p.Code == code);
+            return await _dbContext?.Posts?.FirstOrDefaultAsync(p => p.Code == code);
         }
 
         public Posts Delete(Posts post)
@@ -57,18 +58,44 @@ namespace PostsService.Repositories
             throw new NotImplementedException();
         }
 
-        
-        public IEnumerable<Posts> GetPage(int page, int page_size)
+
+        //public IEnumerable<Posts> GetPage(int page, int page_size)
+        //{
+        //    List<Posts> allPosts = GetAllPosts().ToList();
+        //    return allPosts.GetRange(((page - 1) * page_size), page_size).ToArray();
+        //}
+
+
+        public async Task<(IEnumerable<Posts> postPage,uint maxPage)> GetPageAsync(uint page_num, uint page_size)
         {
-            List<Posts> allPosts = GetAllPosts().ToList();
-            return allPosts.GetRange(((page - 1) * page_size), page_size).ToArray();
+            var posts = await _dbContext.Posts.ToListAsync();
+
+            uint maxPage = (uint)(posts.Count / 10) + 1; // Количество страниц
+
+            posts.Sort((a, b) => a.Code.CompareTo(b.Code));
+            var pagePosts = posts.Skip(((int)page_num - 1) * 10).Take(10).ToList();
+
+            return (pagePosts,maxPage);
         }
 
-        
+
+        public async Task<List<Posts>> GetUnsentKafkaMessagesAsync()
+        {
+            return await _dbContext.Posts
+                .Where(post => !post.IsKafkaMessageSended)
+                .ToListAsync();
+        }
+
         public IEnumerable<Posts> GetAllPosts()
         {
             return _dbContext.Posts;
         }
+
+        public async Task<IEnumerable<Posts>> GetAllPostsAsync()
+        {
+            return await _dbContext.Posts.ToListAsync();
+        }
+
 
         public bool IsAny(Expression<Func<Posts,bool>> predicate)
         {
@@ -85,48 +112,31 @@ namespace PostsService.Repositories
             return await _dbContext.Posts.AnyAsync(post => post.Id == postId);
         }
 
-        public IEnumerable<Posts> SearchWithSubstring(List<string> search_words)
+        public async Task<IEnumerable<Posts>> FindWithSubstring(string substring)
         {
-            var all_posts = _dbContext.Posts;
-            if (search_words.Count == 1)
-            {
-                return all_posts
-                       .AsEnumerable()
-                       .Where(post => SearchSubstringInDb(post, search_words[0]));
-            }
+            string lower_substring = substring.ToLower();
+            List<string> words = lower_substring.Split(' ').ToList();
 
-            List<Posts> posts = all_posts.ToList();
-            List<Posts> posts_to_delete = new();
+            var posts = await GetAllPostsAsync();
+            List<Posts> ListPosts = posts.ToList();
+            ListPosts.Sort((a, b) => a.Code.CompareTo(b.Code));
 
-            for (int i = 0; i < posts.Count; i++)
+            var responsePosts = new List<Posts>();
+
+
+            foreach (var post in ListPosts)
             {
-                for (int j = 0; j < search_words.Count; j++)
+                if (words.All(word =>
+                    post.Id.ToString().ToLower().Contains(word) ||
+                    post.Name.ToLower().Contains(word) ||
+                    post.Code.ToLower().Contains(word) ||
+                    post.River.ToLower().Contains(word)))
                 {
-                    if (!SearchSubstringInDb(posts[i], search_words[j]))
-                    { 
-                        posts_to_delete.Add(posts[i]);
-                        break;
-                    }
+                    responsePosts.Add(post);
                 }
             }
 
-            foreach (var element in posts_to_delete)
-            {
-                posts.Remove(element);
-            }
-
-            return posts;
-        }
-        private bool ContainsSubstring(string original, string substring)
-        {
-            return original.ToLower().Contains(substring.ToLower());
-        }
-        private bool SearchSubstringInDb(Posts post, string substring)
-        {
-            return ContainsSubstring(post.Id.ToString().ToLower(), substring) ||
-                            ContainsSubstring(post.Code.ToLower(), substring) ||
-                            ContainsSubstring(post.Name.ToLower(), substring) ||
-                            ContainsSubstring(post.River.ToLower(), substring);
+            return responsePosts;
         }
 
         public void Complete()

@@ -30,10 +30,10 @@ namespace PostsService
 
             services.AddScoped<PostsRepository>();
             services.AddScoped<PostsServiceImpl>();
+            services.AddScoped<IPostsReepository, PostsRepository>();
 
             services.AddHostedService<BackgroundKafkaSender>();
 
-            // В методе ConfigureServices
             services.AddSingleton(new ProducerConfig
             {
                 BootstrapServers = Configuration.GetConnectionString("BootstrapServersConnection"),

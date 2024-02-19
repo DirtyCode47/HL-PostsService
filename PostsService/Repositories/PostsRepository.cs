@@ -1,6 +1,5 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using PostsService.Entities;
-using PostsService.Exceptions;
 using PostsService.Protos;
 using System;
 using System.Linq.Expressions;

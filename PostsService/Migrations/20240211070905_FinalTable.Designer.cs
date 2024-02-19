@@ -12,8 +12,8 @@ using PostsService.Repositories;
 namespace PostsService.Migrations
 {
     [DbContext(typeof(PostsServiceDbContext))]
-    [Migration("20231206042929_PostsTableCreate")]
-    partial class PostsTableCreate
+    [Migration("20240211070905_FinalTable")]
+    partial class FinalTable
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -35,6 +35,9 @@ namespace PostsService.Migrations
                         .IsRequired()
                         .HasMaxLength(5)
                         .HasColumnType("character varying(5)");
+
+                    b.Property<bool>("IsKafkaMessageSended")
+                        .HasColumnType("boolean");
 
                     b.Property<string>("Name")
                         .IsRequired()

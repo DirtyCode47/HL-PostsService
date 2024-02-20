@@ -20,7 +20,9 @@ message Post {
 
 
 message CreateRequest {
-	Post post = 1;
+	string code = 1;
+	string name = 2;
+	string river = 3;
 }
 
 message CreateResponse {

@@ -30,14 +30,14 @@ namespace PostsService.Services
         public override async Task<CreateResponse> Create(CreateRequest request, ServerCallContext context)
         {
             Guid postId = Guid.NewGuid();
-            Posts post = new Posts() { Id = postId, Code = request.Post.Code, Name = request.Post.Name, River = request.Post.River, IsKafkaMessageSended = false };
+            Posts post = new Posts() { Id = postId, Code = request.Code, Name = request.Name, River = request.River, IsKafkaMessageSended = false };
 
             if (await _postsRepository.GetAsync(postId) != null)
             {
                 throw new RpcException(new Status(StatusCode.AlreadyExists, "Record with this id already exists in the database"));
             }
 
-            if (await _postsRepository.FindByCodeAsync(request.Post.Code) != null)
+            if (await _postsRepository.FindByCodeAsync(request.Code) != null)
             {
                 throw new RpcException(new Status(StatusCode.AlreadyExists, "Record with this post code already exists in the database"));
             }
@@ -79,7 +79,7 @@ namespace PostsService.Services
             //    var deliveryReport = await producer.ProduceAsync("posts", message);
             //}
 
-            return new CreateResponse { Post = request.Post };
+            return new CreateResponse { Post = new Post { Id = post.Id.ToString(), Code = post.Code, Name = post.Name, River = post.River} };
         }
 
         public override async Task<DeleteResponse> Delete(DeleteRequest request, ServerCallContext context)

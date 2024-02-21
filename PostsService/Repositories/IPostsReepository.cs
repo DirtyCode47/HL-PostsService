@@ -21,7 +21,7 @@ namespace PostsService.Repositories
 
         public Task<(IEnumerable<Posts> postPage, uint maxPage)> GetPageAsync(uint page_num, uint page_size);
 
-        public Task<List<Posts>> GetUnsentKafkaMessagesAsync();
+        public Task<List<Posts>> FindUnloadedPostsAsync();
 
         public IEnumerable<Posts> GetAllPosts();
 

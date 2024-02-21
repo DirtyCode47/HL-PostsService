@@ -23,7 +23,7 @@ namespace PostsService.Services
                 {
                     var _postsRepository = scope.ServiceProvider.GetRequiredService<PostsRepository>();
 
-                    List<Posts> failedMessages = await _postsRepository.GetUnsentKafkaMessagesAsync();
+                    List<Posts> failedMessages = await _postsRepository.FindUnloadedPostsAsync();
 
                     foreach (var message in failedMessages)
                     {

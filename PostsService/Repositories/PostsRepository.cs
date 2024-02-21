@@ -78,7 +78,7 @@ namespace PostsService.Repositories
         }
 
 
-        public async Task<List<Posts>> GetUnsentKafkaMessagesAsync()
+        public async Task<List<Posts>> FindUnloadedPostsAsync()
         {
             return await _dbContext.Posts
                 .Where(post => !post.IsKafkaMessageSended)

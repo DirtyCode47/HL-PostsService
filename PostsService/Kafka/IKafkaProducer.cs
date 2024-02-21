@@ -2,6 +2,6 @@
 {
     public interface IKafkaProducer
     {
-        public Task SendMessage(string topic, string message,CancellationToken cancellationToken);
+        public Task SendMessage<T>(string topic, T message, CancellationToken cancellationToken);
     }
 }

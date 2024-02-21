@@ -7,12 +7,14 @@ namespace PostsService.Services
     public class BackgroundKafkaSender : BackgroundService
     {
         private readonly IServiceScopeFactory _scopeFactory;
+        private readonly IConfiguration _configuration;
         private readonly KafkaProducer _producer;
 
-        public BackgroundKafkaSender(IServiceScopeFactory scopeFactory, KafkaProducer kafkaProducer)
+        public BackgroundKafkaSender(IServiceScopeFactory scopeFactory, KafkaProducer kafkaProducer, IConfiguration configuration)
         {
             _producer = kafkaProducer;
             _scopeFactory = scopeFactory;
+            _configuration = configuration;
         }
 
         protected override async Task ExecuteAsync(CancellationToken stoppingToken)
@@ -33,7 +35,7 @@ namespace PostsService.Services
                             cts.CancelAfter(TimeSpan.FromSeconds(5));
 
                             var cancellationToken = cts.Token;
-                            await _producer.SendMessage("posts", System.Text.Json.JsonSerializer.Serialize(message), cancellationToken);
+                            await _producer.SendMessage(_configuration.GetSection("PostMessagesTopic").Value, message, cancellationToken);
 
                             message.IsKafkaMessageSended = true;
                             _postsRepository.Update(message);
@@ -46,7 +48,7 @@ namespace PostsService.Services
                     }
                 }
 
-                await Task.Delay(TimeSpan.FromMinutes(5), stoppingToken); // Например, пауза в 5 минут
+                await Task.Delay(TimeSpan.FromMinutes(1), stoppingToken); // Например, пауза в 5 минут
             }
         }
     }

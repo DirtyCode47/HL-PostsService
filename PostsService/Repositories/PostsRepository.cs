@@ -1,4 +1,5 @@
 ﻿using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Hosting;
 using PostsService.Entities;
 using PostsService.Protos;
 using System;
@@ -35,6 +36,11 @@ namespace PostsService.Repositories
             return await _dbContext.Posts.FindAsync(id);
         }
 
+        public IQueryable<Posts> GetAll()
+        {
+            return _dbContext.Posts.AsQueryable();
+        }
+
         public async Task<Posts> FindByCodeAsync(string code)
         {
             return await _dbContext?.Posts?.FirstOrDefaultAsync(p => p.Code == code);
@@ -44,98 +50,55 @@ namespace PostsService.Repositories
         {
             return _dbContext.Posts.Remove(post).Entity;
         }
-
-
         
         public Posts Update(Posts post)
         {
             return _dbContext.Posts.Update(post).Entity;
         }
 
-        public IEnumerable<Posts> Find(string substring)
+        public async Task<(List<Posts> postPage,uint maxPage)> GetPageAsync(uint page_num, uint page_size)
         {
-            throw new NotImplementedException();
-        }
+            Index start = new((int)page_num * 10,false);
+            Index end = new((int)(page_num * 10 + page_size),false);
+            Range range = new Range(start, end);
 
-
-        //public IEnumerable<Posts> GetPage(int page, int page_size)
-        //{
-        //    List<Posts> allPosts = GetAllPosts().ToList();
-        //    return allPosts.GetRange(((page - 1) * page_size), page_size).ToArray();
-        //}
-
-
-        public async Task<(IEnumerable<Posts> postPage,uint maxPage)> GetPageAsync(uint page_num, uint page_size)
-        {
-            var posts = await _dbContext.Posts.ToListAsync();
-
-            uint maxPage = (uint)(posts.Count / 10) + 1; // Количество страниц
-
-            posts.Sort((a, b) => a.Code.CompareTo(b.Code));
-            var pagePosts = posts.Skip(((int)page_num - 1) * 10).Take(10).ToList();
-
-            return (pagePosts,maxPage);
+            var posts = GetAll();
+            posts.Cast<Posts>().OrderBy(p => p.Code).Take(range);
+            
+            var postsList = await posts.ToListAsync();
+            uint maxPage = (uint)(posts.Count() / 10) + 1; // Количество страниц
+            return (postsList ,maxPage);
         }
 
 
         public async Task<List<Posts>> FindUnloadedPostsAsync()
         {
-            return await _dbContext.Posts
+            return await GetAll()
                 .Where(post => !post.IsKafkaMessageSended)
                 .ToListAsync();
         }
 
-        public IEnumerable<Posts> GetAllPosts()
-        {
-            return _dbContext.Posts;
-        }
-
-        public async Task<IEnumerable<Posts>> GetAllPostsAsync()
-        {
-            return await _dbContext.Posts.ToListAsync();
-        }
-
-
         public bool IsAny(Expression<Func<Posts,bool>> predicate)
         {
-            return _dbContext.Posts.Any(predicate);
-        }
-
-        public int GetMaxPage(int page_size)
-        {
-            throw new NotImplementedException();
+            return GetAll().Any(predicate);
         }
 
         public async Task<bool> ExistsAsync(Guid postId)
         {
-            return await _dbContext.Posts.AnyAsync(post => post.Id == postId);
+            return await GetAll().AnyAsync(post => post.Id == postId);
         }
 
-        public async Task<IEnumerable<Posts>> FindWithSubstring(string substring)
+        public async Task<List<Posts>> FindWithSubstring(string substring)
         {
             string lower_substring = substring.ToLower();
-            List<string> words = lower_substring.Split(' ').ToList();
 
-            var posts = await GetAllPostsAsync();
-            List<Posts> ListPosts = posts.ToList();
-            ListPosts.Sort((a, b) => a.Code.CompareTo(b.Code));
+            IQueryable<Posts> postsQuery = GetAll();
+            postsQuery = postsQuery.Where(u => EF.Functions.Like(u.Id.ToString().ToLower(), lower_substring));
+            postsQuery = postsQuery.Where(u => EF.Functions.Like(u.Name.ToString().ToLower(), lower_substring));
+            postsQuery = postsQuery.Where(u => EF.Functions.Like(u.Code.ToString().ToLower(), lower_substring));
+            postsQuery = postsQuery.Where(u => EF.Functions.Like(u.River.ToString().ToLower(), lower_substring));
 
-            var responsePosts = new List<Posts>();
-
-
-            foreach (var post in ListPosts)
-            {
-                if (words.All(word =>
-                    post.Id.ToString().ToLower().Contains(word) ||
-                    post.Name.ToLower().Contains(word) ||
-                    post.Code.ToLower().Contains(word) ||
-                    post.River.ToLower().Contains(word)))
-                {
-                    responsePosts.Add(post);
-                }
-            }
-
-            return responsePosts;
+            return await postsQuery.ToListAsync();
         }
 
         public void Complete()
@@ -148,6 +111,5 @@ namespace PostsService.Repositories
             return await _dbContext.SaveChangesAsync();
         }
 
-   
     }
 }

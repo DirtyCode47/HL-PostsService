@@ -234,27 +234,5 @@ namespace PostsService.Services
 
             return response;
         }
-
-        public override async Task<GetAllResponse> GetAll(GetAllRequest request, ServerCallContext context)
-        {
-            
-            var posts = await _postsRepository.GetAllPostsAsync(); 
-            
-
-            var response = new GetAllResponse();
-
-            foreach (var post in posts)
-            {
-                response.Posts.Add(new Post
-                {
-                    Id = post.Id.ToString(),
-                    Name = post.Name,
-                    Code = post.Code,
-                    River = post.River
-                });
-            }
-
-            return response;
-        }
     }
 }

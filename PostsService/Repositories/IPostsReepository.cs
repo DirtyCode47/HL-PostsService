@@ -19,20 +19,15 @@ namespace PostsService.Repositories
 
         public Posts Update(Posts post);
 
-        public Task<(IEnumerable<Posts> postPage, uint maxPage)> GetPageAsync(uint page_num, uint page_size);
+        public Task<(List<Posts> postPage, uint maxPage)> GetPageAsync(uint page_num, uint page_size);
 
         public Task<List<Posts>> FindUnloadedPostsAsync();
-
-        public IEnumerable<Posts> GetAllPosts();
-
-        public Task<IEnumerable<Posts>> GetAllPostsAsync();
-
 
         public bool IsAny(Expression<Func<Posts, bool>> predicate);
 
         public Task<bool> ExistsAsync(Guid postId);
 
-        public Task<IEnumerable<Posts>> FindWithSubstring(string substring);
+        public Task<List<Posts>> FindWithSubstring(string substring);
 
         public void Complete();
 

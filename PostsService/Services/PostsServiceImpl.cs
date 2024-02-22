@@ -93,7 +93,7 @@ namespace PostsService.Services
 
             if (entity == null)
             {
-                throw new RpcException(new Status(StatusCode.InvalidArgument, "Can't find a record in the database with this id"));
+                throw new RpcException(new Status(StatusCode.NotFound, "Can't find a record in the database with this id"));
             }
 
             _postsRepository.Delete(entity);

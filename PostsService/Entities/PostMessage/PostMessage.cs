@@ -1,8 +1,8 @@
 ﻿using System.ComponentModel.DataAnnotations;
 
-namespace PostsService.Entities
+namespace PostsService.Entities.PostMessage
 {
-    public class PostMessage:IPosts
+    public class PostMessage : IPosts
     {
         [Key]
         public Guid Id { get; set; }

@@ -16,17 +16,21 @@ namespace PostsService.Repositories
             var addedPost = await _dbContext.Set<TEntity>().AddAsync(entity);
             return addedPost.Entity;
         }
-        public async Task<TEntity> Delete(TEntity entity)
+        public TEntity Delete(TEntity entity)
         {
             return _dbContext.Set<TEntity>().Remove(entity).Entity;
         }
-        public async Task<TEntity> Update(TEntity entity)
+        public TEntity Update(TEntity entity)
         {
             return _dbContext.Set<TEntity>().Update(entity).Entity;
         }
-        public async Task<IEnumerable<TEntity>> GetAllAsync()
+        public IQueryable<TEntity> GetAll()
         {
-            return await _dbContext.Set<TEntity>().ToListAsync();
+            return _dbContext.Set<TEntity>().AsQueryable();
         }
+        //public async Task<int> CompleteAsync()
+        //{
+        //    return await _dbContext.SaveChangesAsync();
+        //}
     }
 }

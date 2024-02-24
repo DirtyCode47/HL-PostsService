@@ -3,9 +3,9 @@ using System.ComponentModel.DataAnnotations.Schema;
 using System.Text.Json.Serialization;
 using Microsoft.EntityFrameworkCore;
 
-namespace PostsService.Entities
+namespace PostsService.Entities.Posts
 {
-    public class Posts:IPosts
+    public class Posts : IPosts
     {
         [Key]
         public Guid Id { get; set; } = Guid.NewGuid();
@@ -20,6 +20,6 @@ namespace PostsService.Entities
 
         [Required]
         [MaxLength(255)]
-        public string River { get; set; }  
+        public string River { get; set; }
     }
 }

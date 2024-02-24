@@ -68,7 +68,8 @@ namespace PostsService.Services
             }
 
             _postsRepository.Delete(entity);
-            await _postsRepository.CompleteAsync();
+            await _dbContext.SaveChangesAsync();
+            //await _postsRepository.CompleteAsync();
 
             return new DeleteResponse
             {
@@ -107,7 +108,8 @@ namespace PostsService.Services
             //existingPost.IsKafkaMessageSended = false;
 
             _postsRepository.Update(existingPost);
-            await _postsRepository.CompleteAsync();
+            await _dbContext.SaveChangesAsync();
+            //await _postsRepository.CompleteAsync();
 
             return new UpdateResponse
             {

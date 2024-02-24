@@ -12,7 +12,7 @@ namespace PostsService.Kafka
             _producer = new ProducerBuilder<Null, string>(producerConfig).Build();
         }
 
-        public async Task SendMessage<T>(string topic, T message, CancellationToken token)
+        public async Task SendMessage<T>(string topic, T message, CancellationToken token) where T : IPosts
         {
             string serializedMessage = System.Text.Json.JsonSerializer.Serialize(message);
 

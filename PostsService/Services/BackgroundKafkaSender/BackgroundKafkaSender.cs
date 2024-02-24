@@ -50,7 +50,7 @@ namespace PostsService.Services.BackgroundKafkaSender
                             await _producer.SendMessage(_configuration.GetSection("PostMessagesTopic").Value, message, cancellationToken);
 
                             postMessageRepository.Delete(post);
-                            postMessageRepository.CompleteAsync();
+                            await postMessageRepository.CompleteAsync();
 
                         }
                         catch (Exception ex)

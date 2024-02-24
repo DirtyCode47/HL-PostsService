@@ -1,5 +1,6 @@
 ﻿using Microsoft.EntityFrameworkCore;
-using PostsService.Entities;
+using PostsService.Entities.PostMessage;
+using PostsService.Entities.Posts;
 
 namespace PostsService.Repositories
 {

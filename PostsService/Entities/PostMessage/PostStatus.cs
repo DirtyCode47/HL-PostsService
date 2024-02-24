@@ -1,4 +1,4 @@
-﻿namespace PostsService.Entities
+﻿namespace PostsService.Entities.PostMessage
 {
     public enum PostStatus
     {

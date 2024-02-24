@@ -1,17 +1,17 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Hosting;
-using PostsService.Entities;
+using PostsService.Entities.Posts;
 using PostsService.Protos;
 using System;
 using System.Linq.Expressions;
 using static Grpc.Core.Metadata;
 
-namespace PostsService.Repositories
+namespace PostsService.Repositories.PostsRepository
 {
-    public class PostsRepository:GenericPostRepository<Posts>,IPostsRepository
+    public class PostsRepository : GenericPostRepository<Posts>, IPostsRepository
     {
         private PostsServiceDbContext _dbContext;
-        public PostsRepository(PostsServiceDbContext dbContext):base(dbContext)
+        public PostsRepository(PostsServiceDbContext dbContext) : base(dbContext)
         {
             _dbContext = dbContext;
         }
@@ -26,7 +26,7 @@ namespace PostsService.Repositories
             return await _dbContext?.Posts?.FirstOrDefaultAsync(p => p.Code == code);
         }
 
-        public async Task<(List<Posts> postPage,uint maxPage)> GetPageAsync(uint page_num, uint page_size)
+        public async Task<(List<Posts> postPage, uint maxPage)> GetPageAsync(uint page_num, uint page_size)
         {
             Index start = new((int)page_num * 10, false);
             Index end = new((int)(page_num * 10 + page_size), false);

@@ -1,15 +1,12 @@
-﻿using Microsoft.AspNetCore.Builder;
-using Microsoft.AspNetCore.Hosting;
-using Microsoft.Extensions.Configuration;
-using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Hosting;
+﻿using Confluent.Kafka;
 using Microsoft.EntityFrameworkCore;
-using PostsService.Repositories;
-using PostsService.Services;
-using StackExchange.Redis;
-using Newtonsoft.Json;
-using Confluent.Kafka;
 using PostsService.Kafka;
+using PostsService.Repositories;
+using PostsService.Repositories.PostMessageRepository;
+using PostsService.Repositories.PostsRepository;
+using PostsService.Services.BackgroundKafkaSender;
+using PostsService.Services.PostsServiceImpl;
+//using PostsService.Repositories.PostsRepository;
 
 namespace PostsService
 {

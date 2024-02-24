@@ -1,6 +1,7 @@
 ﻿using Confluent.Kafka;
 using PostsService.Protos;
 using PostsService.Entities;
+using PostsService.Services.BackgroundKafkaSender;
 
 namespace PostsService.Kafka
 {
@@ -12,7 +13,7 @@ namespace PostsService.Kafka
             _producer = new ProducerBuilder<Null, string>(producerConfig).Build();
         }
 
-        public async Task SendMessage<T>(string topic, T message, CancellationToken token) where T : IPosts
+        public async Task SendMessage<T>(string topic, Message<T> message, CancellationToken token) where T : class,IPosts
         {
             string serializedMessage = System.Text.Json.JsonSerializer.Serialize(message);
 

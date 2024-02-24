@@ -1,10 +1,10 @@
 ﻿using Microsoft.EntityFrameworkCore;
-using PostsService.Entities;
+using PostsService.Entities.Posts;
 using PostsService.Protos;
 using System.Linq.Expressions;
-namespace PostsService.Repositories
+namespace PostsService.Repositories.PostsRepository
 {
-    public interface IPostsRepository:IGenericPostRepository<Posts>
+    public interface IPostsRepository : IGenericPostRepository<Posts>
     {
         public Task<Posts> GetAsync(Guid id);
         public Task<Posts> FindByCodeAsync(string code);

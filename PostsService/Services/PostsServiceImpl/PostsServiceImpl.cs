@@ -1,7 +1,6 @@
 ﻿using Grpc.Core;
 using Microsoft.Extensions.Hosting;
 using Newtonsoft.Json;
-using PostsService.Entities;
 using PostsService.Protos;
 using PostsService.Repositories;
 using StackExchange.Redis;
@@ -17,8 +16,12 @@ using PostsService.Kafka;
 //using static Google.Protobuf.Collections.MapField<TKey, TValue>;
 using static Grpc.Core.Metadata;
 using System.Xml.Linq;
+using PostsService.Entities.Posts;
+using PostsService.Entities.PostMessage;
+using PostsService.Repositories.PostMessageRepository;
+using PostsService.Repositories.PostsRepository;
 
-namespace PostsService.Services
+namespace PostsService.Services.PostsServiceImpl
 {
     public class PostsServiceImpl : Protos.PostsService.PostsServiceBase
     {
@@ -35,7 +38,7 @@ namespace PostsService.Services
         public override async Task<CreateResponse> Create(CreateRequest request, ServerCallContext context)
         {
             Guid postId = Guid.NewGuid();
-            Posts post = new Posts() { Id = postId, Code = request.Code, Name = request.Name, River = request.River};
+            Posts post = new Posts() { Id = postId, Code = request.Code, Name = request.Name, River = request.River };
 
             if (await _postsRepository.GetAsync(postId) != null)
             {
@@ -54,16 +57,16 @@ namespace PostsService.Services
 
             await _dbContext.SaveChangesAsync();
 
-            return new CreateResponse { Post = new Post { Id = post.Id.ToString(), Code = post.Code, Name = post.Name, River = post.River} };
+            return new CreateResponse { Post = new Post { Id = post.Id.ToString(), Code = post.Code, Name = post.Name, River = post.River } };
         }
 
         public override async Task<DeleteResponse> Delete(DeleteRequest request, ServerCallContext context)
         {
-            if(!Guid.TryParse(request.Id,out Guid postId))
+            if (!Guid.TryParse(request.Id, out Guid postId))
             {
                 throw new RpcException(new Status(StatusCode.InvalidArgument, "Uncorrect guid format"));
             }
-            
+
             Posts entity = await _postsRepository.GetAsync(postId);
 
             if (entity == null)
@@ -105,7 +108,7 @@ namespace PostsService.Services
                 throw new RpcException(new Status(StatusCode.InvalidArgument, "Can't find a record in the database with this id"));
             }
 
-            if(await _postsRepository.FindByCodeAsync(request.Post.Code) != null)
+            if (await _postsRepository.FindByCodeAsync(request.Post.Code) != null)
             {
                 throw new RpcException(new Status(StatusCode.InvalidArgument, "Post with such code already exists in DB"));
             }

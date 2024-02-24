@@ -28,7 +28,7 @@ namespace PostsService.Services.PostsServiceImpl
         private readonly PostsServiceDbContext _dbContext;
         private readonly IPostsRepository _postsRepository;
         private readonly IPostMessageRepository _postMessageRepository;
-        public PostsServiceImpl(PostsRepository postsRepository, IKafkaProducer kafkaProducer, PostsServiceDbContext dbContext, IPostMessageRepository postMessageRepository)
+        public PostsServiceImpl(IPostsRepository postsRepository, IKafkaProducer kafkaProducer, PostsServiceDbContext dbContext, IPostMessageRepository postMessageRepository)
         {
             _dbContext = dbContext;
             _postsRepository = postsRepository;

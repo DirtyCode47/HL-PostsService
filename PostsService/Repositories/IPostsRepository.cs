@@ -4,7 +4,7 @@ using PostsService.Protos;
 using System.Linq.Expressions;
 namespace PostsService.Repositories
 {
-    public interface IPostsReepository:IGenericPostRepository<Posts>
+    public interface IPostsRepository:IGenericPostRepository<Posts>
     {
         public Task<Posts> GetAsync(Guid id);
         public Task<Posts> FindByCodeAsync(string code);

@@ -8,9 +8,9 @@ namespace PostsService.Services
     {
         private readonly IServiceScopeFactory _scopeFactory;
         private readonly IConfiguration _configuration;
-        private readonly KafkaProducer _producer;
+        private readonly IKafkaProducer _producer;
 
-        public BackgroundKafkaSender(IServiceScopeFactory scopeFactory, KafkaProducer kafkaProducer, IConfiguration configuration)
+        public BackgroundKafkaSender(IServiceScopeFactory scopeFactory, IKafkaProducer kafkaProducer, IConfiguration configuration)
         {
             _producer = kafkaProducer;
             _scopeFactory = scopeFactory;

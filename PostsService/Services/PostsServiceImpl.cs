@@ -14,19 +14,22 @@ using Confluent.Kafka;
 using System.Text.Json;
 using static Confluent.Kafka.ConfigPropertyNames;
 using PostsService.Kafka;
+//using static Google.Protobuf.Collections.MapField<TKey, TValue>;
+using static Grpc.Core.Metadata;
+using System.Xml.Linq;
 
 namespace PostsService.Services
 {
     public class PostsServiceImpl : Protos.PostsService.PostsServiceBase
     {
         private readonly PostsServiceDbContext _dbContext;
-        private readonly PostsRepository _postsRepository;
-        private readonly IKafkaProducer _kafkaProducer;
-        public PostsServiceImpl(PostsRepository postsRepository, IKafkaProducer kafkaProducer, PostsServiceDbContext dbContext)
+        private readonly IPostsRepository _postsRepository;
+        private readonly IPostMessageRepository _postMessageRepository;
+        public PostsServiceImpl(PostsRepository postsRepository, IKafkaProducer kafkaProducer, PostsServiceDbContext dbContext, IPostMessageRepository postMessageRepository)
         {
             _dbContext = dbContext;
             _postsRepository = postsRepository;
-            _kafkaProducer = kafkaProducer;
+            _postMessageRepository = postMessageRepository;
         }
 
         public override async Task<CreateResponse> Create(CreateRequest request, ServerCallContext context)
@@ -47,7 +50,8 @@ namespace PostsService.Services
             Posts addedPost = await _postsRepository.AddAsync(post);
 
             PostMessage postMessage = new PostMessage() { Id = addedPost.Id, Code = addedPost.Code, Name = addedPost.Name, River = addedPost.River, postStatus = PostStatus.Added };
-            //await _postsRepository.CompleteAsync();
+            await _postMessageRepository.AddAsync(postMessage);
+
             await _dbContext.SaveChangesAsync();
 
             return new CreateResponse { Post = new Post { Id = post.Id.ToString(), Code = post.Code, Name = post.Name, River = post.River} };
@@ -68,6 +72,10 @@ namespace PostsService.Services
             }
 
             _postsRepository.Delete(entity);
+
+            var postMessage = new PostMessage() { Id = entity.Id, Code = entity.Code, Name = entity.Name, River = entity.River, postStatus = PostStatus.Deleted };
+            await _postMessageRepository.AddAsync(postMessage);
+
             await _dbContext.SaveChangesAsync();
             //await _postsRepository.CompleteAsync();
 
@@ -108,6 +116,9 @@ namespace PostsService.Services
             //existingPost.IsKafkaMessageSended = false;
 
             _postsRepository.Update(existingPost);
+            var postMessage = new PostMessage() { Id = existingPost.Id, Code = existingPost.Code, Name = existingPost.Name, River = existingPost.River, postStatus = PostStatus.Updated };
+            await _postMessageRepository.AddAsync(postMessage);
+
             await _dbContext.SaveChangesAsync();
             //await _postsRepository.CompleteAsync();
 

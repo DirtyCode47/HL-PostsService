@@ -8,7 +8,7 @@ using static Grpc.Core.Metadata;
 
 namespace PostsService.Repositories
 {
-    public class PostsRepository:GenericPostRepository<Posts>,IPostsReepository
+    public class PostsRepository:GenericPostRepository<Posts>,IPostsRepository
     {
         private PostsServiceDbContext _dbContext;
         public PostsRepository(PostsServiceDbContext dbContext):base(dbContext)

@@ -2,7 +2,7 @@
 
 namespace PostsService.Repositories
 {
-    public class PostMessagesRepository:GenericPostRepository<PostMessage>
+    public class PostMessagesRepository:GenericPostRepository<PostMessage>,IPostMessageRepository
     {
         private PostsServiceDbContext _dbContext;
         public PostMessagesRepository(PostsServiceDbContext dbContext):base(dbContext)

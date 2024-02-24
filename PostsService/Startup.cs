@@ -30,7 +30,8 @@ namespace PostsService
 
             services.AddScoped<PostsRepository>();
             services.AddScoped<PostsServiceImpl>();
-            services.AddScoped<IPostsReepository, PostsRepository>();
+            services.AddScoped<IPostsRepository, PostsRepository>();
+            services.AddScoped<IPostMessageRepository, PostMessagesRepository>();
 
             services.AddHostedService<BackgroundKafkaSender>();
 

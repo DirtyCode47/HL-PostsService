@@ -21,7 +21,7 @@ namespace PostsService.Repositories
 
         public Task<(List<Posts> postPage, uint maxPage)> GetPageAsync(uint page_num, uint page_size);
 
-        public Task<List<Posts>> FindUnloadedPostsAsync();
+        //public Task<List<Posts>> FindUnloadedPostsAsync();
 
         public bool IsAny(Expression<Func<Posts, bool>> predicate);
 

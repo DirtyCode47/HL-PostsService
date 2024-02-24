@@ -8,5 +8,6 @@ namespace PostsService.Repositories
         public PostsServiceDbContext(DbContextOptions<PostsServiceDbContext> options) : base(options) { }
 
         public DbSet<Posts> Posts { get; set; }
+        public DbSet<PostMessage> PostMessages { get; set; }
     }
 }

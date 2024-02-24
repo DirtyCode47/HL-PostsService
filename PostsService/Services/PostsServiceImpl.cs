@@ -19,18 +19,20 @@ namespace PostsService.Services
 {
     public class PostsServiceImpl : Protos.PostsService.PostsServiceBase
     {
+        private readonly PostsServiceDbContext _dbContext;
         private readonly PostsRepository _postsRepository;
         private readonly IKafkaProducer _kafkaProducer;
-        public PostsServiceImpl(PostsRepository postsRepository, IKafkaProducer kafkaProducer)
+        public PostsServiceImpl(PostsRepository postsRepository, IKafkaProducer kafkaProducer, PostsServiceDbContext dbContext)
         {
-            _postsRepository = postsRepository ?? throw new ArgumentNullException(nameof(postsRepository));
-            _kafkaProducer = kafkaProducer ?? throw new ArgumentNullException(nameof(kafkaProducer));
+            _dbContext = dbContext;
+            _postsRepository = postsRepository;
+            _kafkaProducer = kafkaProducer;
         }
 
         public override async Task<CreateResponse> Create(CreateRequest request, ServerCallContext context)
         {
             Guid postId = Guid.NewGuid();
-            Posts post = new Posts() { Id = postId, Code = request.Code, Name = request.Name, River = request.River, IsKafkaMessageSended = false };
+            Posts post = new Posts() { Id = postId, Code = request.Code, Name = request.Name, River = request.River};
 
             if (await _postsRepository.GetAsync(postId) != null)
             {
@@ -43,41 +45,10 @@ namespace PostsService.Services
             }
 
             Posts addedPost = await _postsRepository.AddAsync(post);
-            await _postsRepository.CompleteAsync();
 
-            //try
-            //{
-            //    if (_kafkaProducer != null)
-            //    {
-            //        string JsonAddedPost = System.Text.Json.JsonSerializer.Serialize(addedPost);
-            //        await _kafkaProducer.SendMessage("posts", JsonAddedPost);
-            //    }
-            //    else
-            //    {
-            //        var messageWithPost = new MessageRetryPosts() { Id = addedPost.Id, Code = addedPost.Code, Name = addedPost.Name, River = addedPost.River };
-            //        await _messageRetryPostsRepository.AddAsync(messageWithPost);
-            //        await _messageRetryPostsRepository.CompleteAsync();
-            //    }
-            //}
-            //catch (Exception ex)
-            //{
-            //    var messageWithPost = new MessageRetryPosts() { Id = addedPost.Id, Code = addedPost.Code, Name = addedPost.Name, River = addedPost.River };
-            //    await _messageRetryPostsRepository.AddAsync(messageWithPost);
-            //    await _messageRetryPostsRepository.CompleteAsync();
-
-            //    return new CreateResponse { Post = request.Post };
-            //}
-
-            //string JsonAddedPost = System.Text.Json.JsonSerializer.Serialize(addedPost);
-
-
-            //var config = new ProducerConfig { BootstrapServers = "localhost:9092" };
-
-            //using (var producer = new ProducerBuilder<Null, string>(config).Build())
-            //{
-            //    var message = new Message<Null, string> { Value = JsonAddedPost };
-            //    var deliveryReport = await producer.ProduceAsync("posts", message);
-            //}
+            PostMessage postMessage = new PostMessage() { Id = addedPost.Id, Code = addedPost.Code, Name = addedPost.Name, River = addedPost.River, postStatus = PostStatus.Added };
+            //await _postsRepository.CompleteAsync();
+            await _dbContext.SaveChangesAsync();
 
             return new CreateResponse { Post = new Post { Id = post.Id.ToString(), Code = post.Code, Name = post.Name, River = post.River} };
         }
@@ -133,7 +104,7 @@ namespace PostsService.Services
             existingPost.Code = request.Post.Code;
             existingPost.Name = request.Post.Name;
             existingPost.River = request.Post.River;
-            existingPost.IsKafkaMessageSended = false;
+            //existingPost.IsKafkaMessageSended = false;
 
             _postsRepository.Update(existingPost);
             await _postsRepository.CompleteAsync();

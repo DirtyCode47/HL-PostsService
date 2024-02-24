@@ -71,12 +71,12 @@ namespace PostsService.Repositories
         }
 
 
-        public async Task<List<Posts>> FindUnloadedPostsAsync()
-        {
-            return await GetAll()
-                .Where(post => !post.IsKafkaMessageSended)
-                .ToListAsync();
-        }
+        //public async Task<List<Posts>> FindUnloadedPostsAsync()
+        //{
+        //    return await GetAll()
+        //        .Where(post => !post.IsKafkaMessageSended)
+        //        .ToListAsync();
+        //}
 
         public bool IsAny(Expression<Func<Posts,bool>> predicate)
         {

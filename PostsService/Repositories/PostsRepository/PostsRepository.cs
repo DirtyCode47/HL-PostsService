@@ -28,6 +28,8 @@ namespace PostsService.Repositories.PostsRepository
 
         public async Task<(List<Posts> postPage, uint maxPage)> GetPageAsync(uint page_num, uint page_size)
         {
+            if(page_size > 100) page_size = 100; //ограничение кол-ва постов на странице (макс - 100)
+
             Index start = new((int) (page_num * page_size), false);
             Index end = new((int)(page_num * page_size + page_size), false);
             Range range = new Range(start, end);

@@ -28,23 +28,27 @@ namespace PostsService.Repositories.PostsRepository
 
         public async Task<(List<Posts> postPage, uint maxPage)> GetPageAsync(uint page_num, uint page_size)
         {
-            Index start = new((int)page_num * 10, false);
-            Index end = new((int)(page_num * 10 + page_size), false);
+            Index start = new((int) (page_num * page_size), false);
+            Index end = new((int)(page_num * page_size + page_size), false);
             Range range = new Range(start, end);
 
-            var posts = GetAll();
+            var posts = _dbContext.Posts.AsQueryable();
             posts.Cast<Posts>().OrderBy(p => p.Code).Take(range);
 
             var postsList = await posts.ToListAsync();
-            uint maxPage = (uint)(posts.Count() / 10) + 1; // Количество страниц
-            return (postsList, maxPage);
+
+            uint pagesCount = (uint)(posts.Count() / page_size);
+            if (posts.Count() % (int)page_size != 0)
+                pagesCount++;
+
+            return (postsList, pagesCount);
         }
 
         public async Task<List<Posts>> FindWithSubstring(string substring)
         {
             string lower_substring = substring.ToLower();
 
-            IQueryable<Posts> postsQuery = GetAll();
+            IQueryable<Posts> postsQuery = _dbContext.Posts.AsQueryable();
             postsQuery = postsQuery.Where(u => EF.Functions.Like(u.Id.ToString().ToLower(), lower_substring));
             postsQuery = postsQuery.Where(u => EF.Functions.Like(u.Name.ToString().ToLower(), lower_substring));
             postsQuery = postsQuery.Where(u => EF.Functions.Like(u.Code.ToString().ToLower(), lower_substring));

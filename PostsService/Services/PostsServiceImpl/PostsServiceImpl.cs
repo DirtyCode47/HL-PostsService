@@ -45,11 +45,6 @@ namespace PostsService.Services.PostsServiceImpl
                 throw new RpcException(new Status(StatusCode.AlreadyExists, "Пост с таким ID уже существует в базе данных"));
             }
 
-            if (await _postsRepository.FindByCodeAsync(request.Code) != null)
-            {
-                throw new RpcException(new Status(StatusCode.AlreadyExists, "Пост с таким кодом уже существует"));
-            }
-
             Posts addedPost = await _postsRepository.AddAsync(post);
 
             PostMessage postMessage = new PostMessage() { Id = addedPost.Id, Code = addedPost.Code, Name = addedPost.Name, River = addedPost.River, postStatus = PostStatus.Added };
@@ -106,11 +101,6 @@ namespace PostsService.Services.PostsServiceImpl
             if (existingPost == null)
             {
                 throw new RpcException(new Status(StatusCode.NotFound, "Пост с таким ID не найден"));
-            }
-
-            if (await _postsRepository.FindByCodeAsync(request.Post.Code) != null)
-            {
-                throw new RpcException(new Status(StatusCode.AlreadyExists, "Пост с таким кодом уже существует"));
             }
 
             existingPost.Code = request.Post.Code;

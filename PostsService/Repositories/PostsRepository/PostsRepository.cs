@@ -21,11 +21,6 @@ namespace PostsService.Repositories.PostsRepository
             return await _dbContext.Posts.FindAsync(id);
         }
 
-        public async Task<Posts> FindByCodeAsync(string code)
-        {
-            return await _dbContext?.Posts?.FirstOrDefaultAsync(p => p.Code == code);
-        }
-
         public async Task<(List<Posts> postPage, uint maxPage)> GetPageAsync(uint page_num, uint page_size)
         {
             if(page_size > 100) page_size = 100; //ограничение кол-ва постов на странице (макс - 100)

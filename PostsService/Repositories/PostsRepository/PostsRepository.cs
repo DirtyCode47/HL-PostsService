@@ -21,37 +21,40 @@ namespace PostsService.Repositories.PostsRepository
             return await _dbContext.Posts.FindAsync(id);
         }
 
-        public async Task<(List<Posts> postPage, uint maxPage)> GetPageAsync(uint page_num, uint page_size)
+        public async Task<(List<Posts> posts, uint pagesCount)> GetManyAsync(uint page_num, uint page_size, string substring)
         {
-            if(page_size > 100) page_size = 100; //ограничение кол-ва постов на странице (макс - 100)
-
-            Index start = new((int) (page_num * page_size), false);
-            Index end = new((int)(page_num * page_size + page_size), false);
-            Range range = new Range(start, end);
-
-            var posts = _dbContext.Posts.AsQueryable();
-            posts.Cast<Posts>().OrderBy(p => p.Code).Take(range);
-
-            var postsList = await posts.ToListAsync();
-
-            uint pagesCount = (uint)(posts.Count() / page_size);
-            if (posts.Count() % (int)page_size != 0)
-                pagesCount++;
-
-            return (postsList, pagesCount);
-        }
-
-        public async Task<List<Posts>> FindWithSubstring(string substring)
-        {
-            string lower_substring = substring.ToLower();
-
             IQueryable<Posts> postsQuery = _dbContext.Posts.AsQueryable();
-            postsQuery = postsQuery.Where(u => EF.Functions.Like(u.Id.ToString().ToLower(), lower_substring));
-            postsQuery = postsQuery.Where(u => EF.Functions.Like(u.Name.ToString().ToLower(), lower_substring));
-            postsQuery = postsQuery.Where(u => EF.Functions.Like(u.Code.ToString().ToLower(), lower_substring));
-            postsQuery = postsQuery.Where(u => EF.Functions.Like(u.River.ToString().ToLower(), lower_substring));
 
-            return await postsQuery.ToListAsync();
+            if (page_size >= 0 && page_size > 0)
+            {
+                if (page_size > 100) page_size = 100; //ограничение кол-ва постов на странице (макс - 100)
+
+                Index start = new((int)(page_num * page_size), false);
+                Index end = new((int)(page_num * page_size + page_size), false);
+                Range range = new Range(start, end);
+
+                postsQuery.Cast<Posts>().OrderBy(p => p.Code).Take(range);
+            }
+
+            if (!string.IsNullOrEmpty(substring)) 
+            {
+                string lower_substring = substring.ToLower();
+                postsQuery = postsQuery.Where(u => 
+                    EF.Functions.Like(u.Id.ToString().ToLower(), lower_substring) ||
+                    EF.Functions.Like(u.Name.ToString().ToLower(), lower_substring) ||
+                    EF.Functions.Like(u.Code.ToString().ToLower(), lower_substring) ||
+                    EF.Functions.Like(u.River.ToString().ToLower(), lower_substring
+                    ));
+            }
+
+            var postsList = await postsQuery.ToListAsync();
+
+            uint pages_count = (uint)(postsQuery.Count() / page_size);
+            if (postsQuery.Count() % (int)page_size != 0)
+                pages_count++;
+
+            return (postsList, pages_count);
         }
+
     }
 }

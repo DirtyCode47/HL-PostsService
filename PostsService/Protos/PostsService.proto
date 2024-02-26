@@ -5,10 +5,8 @@ service PostsService {
 	rpc Create(CreateRequest) returns (CreateResponse);
 	rpc Delete(DeleteRequest) returns (DeleteResponse);
 	rpc Update(UpdateRequest) returns (UpdateResponse);
-	rpc GetPage(GetPageRequest) returns (GetPageResponse);
 	rpc Get(GetRequest) returns (GetResponse);
-	rpc Find(FindRequest) returns (FindResponse);
-	rpc GetAll(GetAllRequest) returns (GetAllResponse);
+	rpc GetMany(GetManyRequest) returns (GetManyResponse);
 }
 
 message Post {
@@ -30,8 +28,6 @@ message CreateResponse {
 }
 
 
-
-
 message DeleteRequest {
 	string id = 1;
 }
@@ -39,7 +35,6 @@ message DeleteRequest {
 message DeleteResponse {
 	Post post = 1;
 }
-
 
 
 message UpdateRequest {
@@ -51,19 +46,6 @@ message UpdateResponse {
 }
 
 
-
-message GetPageRequest {
-	uint32 page_number = 1;
-}
-
-message GetPageResponse {
-	repeated Post posts = 1;
-	uint32 page_number = 2;
-	uint32 max_page_number = 3;
-}
-
-
-
 message GetRequest {
     string id = 1;
 }
@@ -73,23 +55,19 @@ message GetResponse {
 }
 
 
-
-message FindRequest {
-	string substring = 1;
+message GetManyRequest {
+	uint32 page_number = 1;
+	string substring = 2;
 }
 
-message FindResponse {
-	repeated Post posts = 1; 
-}
-
-
-
-message GetAllRequest{
-
-}
-message GetAllResponse{
+message GetManyResponse {
 	repeated Post posts = 1;
+	uint32 page_number = 2;
+	uint32 max_page_number = 3;
 }
+
+
+
 
 
 

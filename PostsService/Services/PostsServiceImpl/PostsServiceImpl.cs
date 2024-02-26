@@ -153,23 +153,23 @@ namespace PostsService.Services.PostsServiceImpl
             };
         }
 
-        public override async Task<GetPageResponse> GetPage(GetPageRequest request, ServerCallContext context)
+        public override async Task<GetManyResponse> GetMany(GetManyRequest request, ServerCallContext context)
         {
-            var postPageInfo = await _postsRepository.GetPageAsync(request.PageNumber, 10);
+            var postPageInfo = await _postsRepository.GetManyAsync(request.PageNumber, 10, request.Substring);
 
-            var postPage = postPageInfo.postPage;
-            uint maxPage = postPageInfo.maxPage;
+            var posts = postPageInfo.posts;
+            uint maxPage = postPageInfo.pagesCount;
 
-            if (!postPage.Any())
+            if (!posts.Any())
             {
                 throw new RpcException(new Status(StatusCode.NotFound, "Не найдено постов на запрашиваемой странице"));
             }
 
-            GetPageResponse getPageResponse = new GetPageResponse();
+            GetManyResponse getManyResponse = new GetManyResponse();
 
-            foreach (var post in postPage)
+            foreach (var post in posts)
             {
-                getPageResponse.Posts.Add(new Post
+                getManyResponse.Posts.Add(new Post
                 {
                     Id = post.Id.ToString(),
                     Name = post.Name,
@@ -178,38 +178,11 @@ namespace PostsService.Services.PostsServiceImpl
                 });
             }
 
-            getPageResponse.PageNumber = request.PageNumber;
-            getPageResponse.MaxPageNumber = maxPage;
+            getManyResponse.PageNumber = request.PageNumber;
+            getManyResponse.MaxPageNumber = maxPage;
 
-            return getPageResponse;
+            return getManyResponse;
         }
 
-        public override async Task<FindResponse> Find(FindRequest request, ServerCallContext context)
-        {
-            if (string.IsNullOrEmpty(request.Substring))
-            {
-                throw new RpcException(new Status(StatusCode.InvalidArgument, "В запросе не указаны параметры"));
-            }
-
-            var FindedPosts = await _postsRepository.FindWithSubstring(request.Substring);
-
-            var responsePosts = new List<Post>();
-
-            foreach (var post in FindedPosts)
-            {
-                responsePosts.Add(new Post
-                {
-                    Id = post.Id.ToString(),
-                    Name = post.Name,
-                    Code = post.Code,
-                    River = post.River
-                });
-            }
-
-            FindResponse response = new FindResponse();
-            response.Posts.AddRange(responsePosts);
-
-            return response;
-        }
     }
 }

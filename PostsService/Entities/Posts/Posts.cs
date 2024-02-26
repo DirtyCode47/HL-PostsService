@@ -5,7 +5,7 @@ using Microsoft.EntityFrameworkCore;
 
 namespace PostsService.Entities.Posts
 {
-    public class Posts : IPosts
+    public class Posts : IPosts,ISerializableObject
     {
         [Key]
         public Guid Id { get; set; } = Guid.NewGuid();

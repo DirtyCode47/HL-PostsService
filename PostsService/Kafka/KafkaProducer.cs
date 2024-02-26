@@ -13,9 +13,9 @@ namespace PostsService.Kafka
             _producer = new ProducerBuilder<Null, string>(producerConfig).Build();
         }
 
-        public async Task SendMessage<T>(string topic, Message<T> message, CancellationToken token) where T : class,IPosts
+        public async Task SendMessage<T>(string topic, Message<T> message, CancellationToken token) where T : class,IPosts,ISerializableObject
         {
-            string serializedMessage = System.Text.Json.JsonSerializer.Serialize(message);
+            string serializedMessage= message.SerializeToJson();
 
             var kafkaMessage = new Message<Null, string> { Value = serializedMessage };
             await _producer.ProduceAsync(topic, kafkaMessage);

@@ -8,6 +8,5 @@ namespace PostsService.Repositories
         public Task<TEntity> AddAsync(TEntity entity);
         public TEntity Delete(TEntity entity);
         public TEntity Update(TEntity entity);
-        public IQueryable<TEntity> GetAll();
     }
 }

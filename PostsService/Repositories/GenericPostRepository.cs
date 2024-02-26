@@ -24,10 +24,6 @@ namespace PostsService.Repositories
         {
             return _dbContext.Set<TEntity>().Update(entity).Entity;
         }
-        public IQueryable<TEntity> GetAll()
-        {
-            return _dbContext.Set<TEntity>().AsQueryable();
-        }
         //public async Task<int> CompleteAsync()
         //{
         //    return await _dbContext.SaveChangesAsync();

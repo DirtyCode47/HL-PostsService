@@ -96,19 +96,17 @@ namespace PostsService.Services.PostsServiceImpl
                 throw new RpcException(new Status(StatusCode.InvalidArgument, "Некорректный формат GUID"));
             }
 
-            var existingPost = await _postsRepository.GetAsync(postId);
-
-            if (existingPost == null)
+            Posts existingPost = new Posts()
             {
-                throw new RpcException(new Status(StatusCode.NotFound, "Пост с таким ID не найден"));
-            }
-
-            existingPost.Code = request.Post.Code;
-            existingPost.Name = request.Post.Name;
-            existingPost.River = request.Post.River;
-            //existingPost.IsKafkaMessageSended = false;
+                Id = postId,
+                Code = request.Post.Code,
+                Name = request.Post.Name,
+                River = request.Post.River,
+                //IsKafkaMessageSended = false
+            };
 
             _postsRepository.Update(existingPost);
+
             var postMessage = new PostMessage() { Id = existingPost.Id, Code = existingPost.Code, Name = existingPost.Name, River = existingPost.River, postStatus = PostStatus.Updated };
             await _postMessageRepository.AddAsync(postMessage);
 

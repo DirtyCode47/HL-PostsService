@@ -42,12 +42,12 @@ namespace PostsService.Services.PostsServiceImpl
 
             if (await _postsRepository.GetAsync(postId) != null)
             {
-                throw new RpcException(new Status(StatusCode.AlreadyExists, "Record with this id already exists in the database"));
+                throw new RpcException(new Status(StatusCode.AlreadyExists, "Пост с таким ID уже существует в базе данных"));
             }
 
             if (await _postsRepository.FindByCodeAsync(request.Code) != null)
             {
-                throw new RpcException(new Status(StatusCode.AlreadyExists, "Record with this post code already exists in the database"));
+                throw new RpcException(new Status(StatusCode.AlreadyExists, "Пост с таким кодом уже существует"));
             }
 
             Posts addedPost = await _postsRepository.AddAsync(post);
@@ -64,14 +64,14 @@ namespace PostsService.Services.PostsServiceImpl
         {
             if (!Guid.TryParse(request.Id, out Guid postId))
             {
-                throw new RpcException(new Status(StatusCode.InvalidArgument, "Uncorrect guid format"));
+                throw new RpcException(new Status(StatusCode.InvalidArgument, "Некорректный формат GUID"));
             }
 
             Posts entity = await _postsRepository.GetAsync(postId);
 
             if (entity == null)
             {
-                throw new RpcException(new Status(StatusCode.NotFound, "Can't find a record in the database with this id"));
+                throw new RpcException(new Status(StatusCode.NotFound, "Пост с таким ID не найден"));
             }
 
             _postsRepository.Delete(entity);
@@ -98,19 +98,19 @@ namespace PostsService.Services.PostsServiceImpl
         {
             if (!Guid.TryParse(request.Post.Id, out Guid postId))
             {
-                throw new RpcException(new Status(StatusCode.InvalidArgument, "Uncorrect guid format"));
+                throw new RpcException(new Status(StatusCode.InvalidArgument, "Некорректный формат GUID"));
             }
 
             var existingPost = await _postsRepository.GetAsync(postId);
 
             if (existingPost == null)
             {
-                throw new RpcException(new Status(StatusCode.InvalidArgument, "Can't find a record in the database with this id"));
+                throw new RpcException(new Status(StatusCode.NotFound, "Пост с таким ID не найден"));
             }
 
             if (await _postsRepository.FindByCodeAsync(request.Post.Code) != null)
             {
-                throw new RpcException(new Status(StatusCode.InvalidArgument, "Post with such code already exists in DB"));
+                throw new RpcException(new Status(StatusCode.AlreadyExists, "Пост с таким кодом уже существует"));
             }
 
             existingPost.Code = request.Post.Code;
@@ -141,14 +141,14 @@ namespace PostsService.Services.PostsServiceImpl
         {
             if (!Guid.TryParse(request.Id, out Guid guid))
             {
-                throw new RpcException(new Status(StatusCode.InvalidArgument, "Uncorrect guid format"));
+                throw new RpcException(new Status(StatusCode.InvalidArgument, "Некорректный формат GUID"));
             }
 
             var post = await _postsRepository.GetAsync(guid);
 
             if (post == null)
             {
-                throw new RpcException(new Status(StatusCode.NotFound, "Can't find a record in the database with this id"));
+                throw new RpcException(new Status(StatusCode.NotFound, "Пост с таким ID не найден"));
             }
 
             return new GetResponse
@@ -172,7 +172,7 @@ namespace PostsService.Services.PostsServiceImpl
 
             if (!postPage.Any())
             {
-                throw new RpcException(new Status(StatusCode.InvalidArgument, "Can't find elements on this page"));
+                throw new RpcException(new Status(StatusCode.NotFound, "Не найдено постов на запрашиваемой странице"));
             }
 
             GetPageResponse getPageResponse = new GetPageResponse();
@@ -198,7 +198,7 @@ namespace PostsService.Services.PostsServiceImpl
         {
             if (string.IsNullOrEmpty(request.Substring))
             {
-                throw new RpcException(new Status(StatusCode.InvalidArgument, "Request has an empty string"));
+                throw new RpcException(new Status(StatusCode.InvalidArgument, "В запросе не указаны параметры"));
             }
 
             var FindedPosts = await _postsRepository.FindWithSubstring(request.Substring);

@@ -1,4 +1,5 @@
-﻿using PostsService.Entities.PostMessage;
+﻿using Microsoft.EntityFrameworkCore;
+using PostsService.Entities.PostMessage;
 
 namespace PostsService.Repositories.PostMessageRepository
 {
@@ -8,6 +9,11 @@ namespace PostsService.Repositories.PostMessageRepository
         public PostMessagesRepository(PostsServiceDbContext dbContext) : base(dbContext)
         {
             _dbContext = dbContext;
+        }
+
+        public async Task<List<PostMessage>> GetAll()
+        {
+            return await _dbContext.PostMessages.ToListAsync();
         }
 
         public async Task<int> CompleteAsync()

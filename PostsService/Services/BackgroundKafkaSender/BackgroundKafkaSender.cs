@@ -26,7 +26,7 @@ namespace PostsService.Services.BackgroundKafkaSender
                 {
                     var postMessageRepository = scope.ServiceProvider.GetRequiredService<IPostMessageRepository>();
 
-                    List<PostMessage> unloadedPosts = await postMessageRepository.GetAll().ToListAsync();
+                    List<PostMessage> unloadedPosts = await postMessageRepository.GetAll();
 
                     foreach (var post in unloadedPosts)
                     {

@@ -3,7 +3,7 @@ using PostsService.Entities;
 
 namespace PostsService.Repositories
 {
-    public class GenericPostRepository<TEntity> : IGenericPostRepository<TEntity> where TEntity : class, IPosts
+    public class GenericPostRepository<TEntity> : IGenericPostRepository<TEntity> where TEntity : class
     {
         private PostsServiceDbContext _dbContext;
         public GenericPostRepository(PostsServiceDbContext dbContext)

@@ -2,7 +2,7 @@
 
 namespace PostsService.Entities.PostMessage
 {
-    public class PostMessage : IPosts,ISerializableObject
+    public class PostMessage : ISerializableObject
     {
         [Key]
         public Guid Id { get; set; }

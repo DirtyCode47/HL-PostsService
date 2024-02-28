@@ -7,7 +7,7 @@ namespace PostsService.Repositories.PostsRepository
     public interface IPostsRepository : IGenericPostRepository<Posts>
     {
         public Task<Posts> GetAsync(Guid id);
-        public Task<(List<Posts> posts, uint pagesCount)> GetManyAsync(uint page_num, uint page_size, string substring);
+        public Task<(List<Posts> posts, uint pagesCount)> GetListAsync(uint page_num, uint page_size, bool isGettingPage, string substring);
         //public Task<int> CompleteAsync();
     }
 }

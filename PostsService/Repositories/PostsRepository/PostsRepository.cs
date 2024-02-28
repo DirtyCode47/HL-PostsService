@@ -21,26 +21,22 @@ namespace PostsService.Repositories.PostsRepository
             return await _dbContext.Posts.FindAsync(id);
         }
 
-        public async Task<(List<Posts> posts, uint pagesCount)> GetManyAsync(uint page_num, uint page_size, string substring)
+        public async Task<(List<Posts> posts, uint pagesCount)> GetListAsync(uint page_num, uint page_size, bool isGettingPage ,string substring)
         {
             IQueryable<Posts> postsQuery = _dbContext.Posts.AsQueryable();
 
-            if (page_size >= 0 && page_size > 0)
+            if (isGettingPage)
             {
-                if (page_size > 100) page_size = 100; //ограничение кол-ва постов на странице (макс - 100)
+                int skipCount = (int)(page_num * page_size);
+                int takeCount = (int)(page_num * page_size + page_size);
 
-                Index start = new((int)(page_num * page_size), false);
-                Index end = new((int)(page_num * page_size + page_size), false);
-                Range range = new Range(start, end);
-
-                postsQuery.Cast<Posts>().OrderBy(p => p.Code).Take(range);
+                postsQuery.Cast<Posts>().OrderBy(p => p.Code).Skip(skipCount).Take(takeCount);
             }
 
             if (!string.IsNullOrEmpty(substring)) 
             {
                 string lower_substring = substring.ToLower();
                 postsQuery = postsQuery.Where(u => 
-                    EF.Functions.Like(u.Id.ToString().ToLower(), lower_substring) ||
                     EF.Functions.Like(u.Name.ToString().ToLower(), lower_substring) ||
                     EF.Functions.Like(u.Code.ToString().ToLower(), lower_substring) ||
                     EF.Functions.Like(u.River.ToString().ToLower(), lower_substring

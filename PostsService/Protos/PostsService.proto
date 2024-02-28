@@ -6,7 +6,7 @@ service PostsService {
 	rpc Delete(DeleteRequest) returns (DeleteResponse);
 	rpc Update(UpdateRequest) returns (UpdateResponse);
 	rpc Get(GetRequest) returns (GetResponse);
-	rpc GetMany(GetManyRequest) returns (GetManyResponse);
+	rpc GetList(GetListRequest) returns (GetListResponse);
 }
 
 message Post {
@@ -55,12 +55,14 @@ message GetResponse {
 }
 
 
-message GetManyRequest {
+message GetListRequest {
 	uint32 page_number = 1;
-	string substring = 2;
+	uint32 page_size = 2;
+	bool is_getting_page = 3;
+	string substring = 4;
 }
 
-message GetManyResponse {
+message GetListResponse {
 	repeated Post posts = 1;
 	uint32 page_number = 2;
 	uint32 max_page_number = 3;

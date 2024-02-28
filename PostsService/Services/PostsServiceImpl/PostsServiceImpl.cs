@@ -151,23 +151,32 @@ namespace PostsService.Services.PostsServiceImpl
             };
         }
 
-        public override async Task<GetManyResponse> GetMany(GetManyRequest request, ServerCallContext context)
+        public override async Task<GetListResponse> GetList(GetListRequest request, ServerCallContext context)
         {
-            var postPageInfo = await _postsRepository.GetManyAsync(request.PageNumber, 10, request.Substring);
+            if(request.PageNumber < 0 || request.PageSize < 0)
+                throw new RpcException(new Status(StatusCode.InvalidArgument, "Некорректный формат входных данных"));
+
+            if(request.PageSize == 0 && request.PageSize == 0 && string.IsNullOrEmpty(request.Substring))
+                throw new RpcException(new Status(StatusCode.InvalidArgument, "Не указаны данные для поиска"));
+
+            if (request.PageSize > 100) //ограничиваем размер страницы
+                request.PageSize = 100;
+
+            var postPageInfo = await _postsRepository.GetListAsync(request.PageNumber, request.PageSize, request.IsGettingPage, request.Substring);
 
             var posts = postPageInfo.posts;
             uint maxPage = postPageInfo.pagesCount;
 
             if (!posts.Any())
-            {
                 throw new RpcException(new Status(StatusCode.NotFound, "Не найдено постов на запрашиваемой странице"));
-            }
 
-            GetManyResponse getManyResponse = new GetManyResponse();
+            GetListResponse getListResponse = new GetListResponse();
+            getListResponse.PageNumber = request.PageNumber;
+            getListResponse.MaxPageNumber = maxPage;
 
             foreach (var post in posts)
             {
-                getManyResponse.Posts.Add(new Post
+                getListResponse.Posts.Add(new Post
                 {
                     Id = post.Id.ToString(),
                     Name = post.Name,
@@ -176,10 +185,7 @@ namespace PostsService.Services.PostsServiceImpl
                 });
             }
 
-            getManyResponse.PageNumber = request.PageNumber;
-            getManyResponse.MaxPageNumber = maxPage;
-
-            return getManyResponse;
+            return getListResponse;
         }
 
     }

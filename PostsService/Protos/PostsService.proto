@@ -58,7 +58,6 @@ message GetResponse {
 message GetListRequest {
 	uint32 page_number = 1;
 	uint32 page_size = 2;
-	bool is_getting_page = 3;
 	string substring = 4;
 }
 

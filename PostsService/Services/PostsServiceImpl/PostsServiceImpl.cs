@@ -153,15 +153,13 @@ namespace PostsService.Services.PostsServiceImpl
 
         public override async Task<GetListResponse> GetList(GetListRequest request, ServerCallContext context)
         {
-            if (request.PageNumber < 0 || request.PageSize < 0)
+            if (request.PageNumber < 0 || request.PageSize <= 0)
                 throw new RpcException(new Status(StatusCode.InvalidArgument, "Некорректный формат входных данных"));
-
-            bool isGettingPage = (request.PageNumber == 0 && request.PageSize == 0) ? false : true;
 
             if (request.PageSize > 100) //ограничиваем размер страницы
                 request.PageSize = 100;
 
-            var postPageInfo = await _postsRepository.GetListAsync(request.PageNumber, request.PageSize, isGettingPage, request.Substring);
+            var postPageInfo = await _postsRepository.GetListAsync(request.PageNumber, request.PageSize, request.Substring);
 
             var posts = postPageInfo.posts;
             uint maxPage = postPageInfo.pagesCount;
